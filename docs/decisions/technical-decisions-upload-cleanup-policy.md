@@ -42,7 +42,8 @@ _Subprojects in scope:_
 
 **Recommendation:** Option A (lifecycle rule nativa do storage + cron de banco para os drafts) — divide a responsabilidade pela fronteira natural entre os dois recursos: o storage cuida do que é dele (partes multipart) através de um mecanismo nativo e garantido mesmo com a aplicação fora do ar, enquanto a aplicação cuida apenas do que é exclusivamente seu (o registro `draft` no Postgres, que o storage não enxerga). Isso é mais robusto que a Option B, que depende inteiramente do processo da aplicação estar de pé para proteger o storage contra custo ilimitado.
 
-**Decision:** _[pending]_
+**Decision:** A (lifecycle rule nativa do storage + cron de banco para os drafts)
+**Libraries:** @nestjs/schedule
 
 ---
 
@@ -50,4 +51,4 @@ _Subprojects in scope:_
 
 | ID | Scope | Decision | Recommendation | Choice |
 |----|-------|----------|---------------|--------|
-| TD-01 | Backend | Política de limpeza de uploads/drafts abandonados | Option A (lifecycle rule do storage + cron de banco) | _[pending]_ |
+| TD-01 | Backend | Política de limpeza de uploads/drafts abandonados | Option A (lifecycle rule do storage + cron de banco) | **A** |

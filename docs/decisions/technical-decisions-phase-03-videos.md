@@ -42,7 +42,8 @@ _Subprojects in scope:_
 
 **Recommendation:** Option A (BullMQ + Redis via `@nestjs/bullmq`) — é o módulo oficial do NestJS para filas, entrega retry/backoff/progresso/concorrência nativamente (necessário para jobs de vídeo longos e falha-propensos, ver TD-06), e é o par mais idiomático para um worker de vídeo em NestJS. O custo de adicionar Redis ao Compose é aceitável: a arquitetura já prevê a fila como container dedicado e distinto do Postgres.
 
-**Decision:** _[pending]_
+**Decision:** A (BullMQ + Redis via `@nestjs/bullmq`)
+**Libraries:** @nestjs/bullmq, bullmq
 
 ---
 
@@ -73,7 +74,8 @@ _Subprojects in scope:_
 
 **Recommendation:** Option A (multipart direto ao storage com URLs pré-assinadas por parte) — é a única opção que atende simultaneamente aos três requisitos explícitos: suportar 10GB (acima do limite de PUT único), não travar a API (bytes nunca passam pelo processo Node) e permitir retomada em falha de conexão (reenvio por parte, não do arquivo inteiro). Confirmado como compatível com a API S3 usada pelo MinIO via `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`.
 
-**Decision:** _[pending]_
+**Decision:** A (multipart direto ao storage via URLs pré-assinadas)
+**Libraries:** @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
 
 ---
 
@@ -99,7 +101,7 @@ _Subprojects in scope:_
 
 **Recommendation:** Option A (processo/container dedicado) — é a arquitetura já prevista no diagrama C4 do projeto (container "Video Worker" separado da API), e evita que processamento pesado de vídeo degrade a latência da API. Ambos os processos compartilham o mesmo `VideosModule`/codebase; só o entrypoint de bootstrap difere.
 
-**Decision:** _[pending]_
+**Decision:** A (processo/container dedicado, módulo compartilhado)
 
 ---
 
@@ -125,7 +127,8 @@ _Subprojects in scope:_
 
 **Recommendation:** Option A (`fluent-ffmpeg`) — cobre com uma API estável exatamente as duas operações que esta fase precisa (`ffprobe` para metadados, `screenshots()` para thumbnail), evitando reescrever parsing de processo por nenhum benefício real.
 
-**Decision:** _[pending]_
+**Decision:** A (`fluent-ffmpeg`). Thumbnail extraída em **10% da duração do vídeo** (`screenshots({ timestamps: ['10%'] })`) — resolvido via AMB-1 do `plan-validate`: evita frames pretos/em branco comuns nos primeiros segundos (fade-in, intro).
+**Libraries:** fluent-ffmpeg
 
 ---
 
@@ -151,7 +154,8 @@ _Subprojects in scope:_
 
 **Recommendation:** Option B (redirect para URL pré-assinada de leitura) — evita reimplementar `Range`/206 (o storage já faz isso corretamente) e mantém o princípio já decidido na TD-02: a API nunca deve proxear bytes de arquivos grandes. O UUID do vídeo (chave primária da entidade) é o identificador público estável; a URL pré-assinada é um ponteiro de curta duração e sem colisão para o objeto.
 
-**Decision:** _[pending]_
+**Decision:** B (redirect para URL pré-assinada de leitura)
+**Libraries:** — (reaproveita @aws-sdk/client-s3 + @aws-sdk/s3-request-presigner já introduzidos na TD-02)
 
 ---
 
@@ -177,7 +181,8 @@ _Subprojects in scope:_
 
 **Recommendation:** Option B (retry automático via BullMQ antes de `error`) — como a TD-01 já escolhe uma fila com `attempts`/`backoff` nativos, não hesitar em falhas transitórias antes de expor `error` ao usuário é ganho "de graça" e evita retrabalho de upload para problemas que se resolveriam sozinhos.
 
-**Decision:** _[pending]_
+**Decision:** B (enum + retry automático via BullMQ). Esclarecimento (AMB-2 do `plan-validate`): este enum (`draft | processing | ready | error`) cobre **exclusivamente o pipeline técnico de upload/processamento** desta fase. A dimensão de publicação de conteúdo (rascunho ↔ publicado) da Fase 04 é um campo/estado separado, fora do escopo desta TD.
+**Libraries:** — (reaproveita @nestjs/bullmq já introduzido na TD-01)
 
 ---
 
@@ -203,7 +208,8 @@ _Subprojects in scope:_
 
 **Recommendation:** Option A (bucket único, chave prefixada por UUID do vídeo) — o UUID já elimina colisões sem precisar de um segundo bucket, e um único bucket é mais simples de provisionar e é consistente com o único container de Object Storage do diagrama de arquitetura.
 
-**Decision:** _[pending]_
+**Decision:** A (bucket único, chave prefixada por UUID do vídeo)
+**Libraries:** — (reaproveita @aws-sdk/client-s3 já introduzido na TD-02)
 
 ---
 
@@ -211,10 +217,10 @@ _Subprojects in scope:_
 
 | ID | Scope | Decision | Recommendation | Choice |
 |----|-------|----------|---------------|--------|
-| TD-01 | Backend | Tecnologia de fila de processamento | BullMQ + Redis (`@nestjs/bullmq`) | _[pending]_ |
-| TD-02 | Backend | Estratégia de upload de até 10GB | Multipart direto ao storage via URLs pré-assinadas | _[pending]_ |
-| TD-03 | Backend | Modelo de execução do worker | Processo/container dedicado, módulo compartilhado | _[pending]_ |
-| TD-04 | Backend | Extração de metadados e thumbnail | `fluent-ffmpeg` | _[pending]_ |
-| TD-05 | Backend | URL única e streaming/download | Redirect para URL pré-assinada de leitura (GET) | _[pending]_ |
-| TD-06 | Backend | Ciclo de status e falha de processamento | Enum de status + retry automático via BullMQ | _[pending]_ |
-| TD-07 | Backend | Organização de buckets/chaves | Bucket único, chave prefixada por UUID do vídeo | _[pending]_ |
+| TD-01 | Backend | Tecnologia de fila de processamento | BullMQ + Redis (`@nestjs/bullmq`) | **A** |
+| TD-02 | Backend | Estratégia de upload de até 10GB | Multipart direto ao storage via URLs pré-assinadas | **A** |
+| TD-03 | Backend | Modelo de execução do worker | Processo/container dedicado, módulo compartilhado | **A** |
+| TD-04 | Backend | Extração de metadados e thumbnail | `fluent-ffmpeg` | **A** |
+| TD-05 | Backend | URL única e streaming/download | Redirect para URL pré-assinada de leitura (GET) | **B** |
+| TD-06 | Backend | Ciclo de status e falha de processamento | Enum de status + retry automático via BullMQ | **B** |
+| TD-07 | Backend | Organização de buckets/chaves | Bucket único, chave prefixada por UUID do vídeo | **A** |

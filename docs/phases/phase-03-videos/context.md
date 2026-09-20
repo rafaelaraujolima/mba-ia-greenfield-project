@@ -3,8 +3,8 @@ kind: phase
 name: phase-03-videos
 sources_mtime:
   docs/project-plan.md: "2026-09-17T19:27:23-04:00"
-  docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-17T20:03:46-04:00"
-  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T11:13:32-04:00"
+  docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-20T15:32:08-04:00"
+  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T15:32:18-04:00"
   docs/decisions/technical-decisions-openapi-docs-nestjs.md: "2026-09-17T19:27:23-04:00"
   docs/phases/phase-01-configuracao-base/context.md: "2026-09-17T19:27:23-04:00"
   docs/phases/phase-02-auth/context.md: "2026-09-17T19:27:23-04:00"
@@ -49,14 +49,14 @@ sources_mtime:
 
 | Ref | Source | Scope | Topic | Status | Decision | Libraries |
 |-----|--------|-------|-------|--------|----------|-----------|
-| phase-03-videos/TD-01 | phase | Backend | Tecnologia de fila de processamento em segundo plano | pending | — | — |
-| phase-03-videos/TD-02 | phase | Backend | Estratégia de upload de vídeos de até 10GB sem travar a API | pending | — | — |
-| phase-03-videos/TD-03 | phase | Backend | Modelo de execução do worker de vídeo | pending | — | — |
-| phase-03-videos/TD-04 | phase | Backend | Extração de metadados e geração de thumbnail | pending | — | — |
-| phase-03-videos/TD-05 | phase | Backend | URL única por vídeo e estratégia de streaming/download | pending | — | — |
-| phase-03-videos/TD-06 | phase | Backend | Ciclo de status do vídeo e tratamento de falha de processamento | pending | — | — |
-| phase-03-videos/TD-07 | phase | Backend | Organização de buckets/chaves no object storage | pending | — | — |
-| upload-cleanup-policy/TD-01 | ad-hoc | Backend | Política de limpeza de uploads multipart abandonados e vídeos rascunho órfãos | pending | — | — |
+| phase-03-videos/TD-01 | phase | Backend | Tecnologia de fila de processamento em segundo plano | decided | A | @nestjs/bullmq, bullmq |
+| phase-03-videos/TD-02 | phase | Backend | Estratégia de upload de vídeos de até 10GB sem travar a API | decided | A | @aws-sdk/client-s3, @aws-sdk/s3-request-presigner |
+| phase-03-videos/TD-03 | phase | Backend | Modelo de execução do worker de vídeo | decided | A | — |
+| phase-03-videos/TD-04 | phase | Backend | Extração de metadados e geração de thumbnail | decided | A | fluent-ffmpeg |
+| phase-03-videos/TD-05 | phase | Backend | URL única por vídeo e estratégia de streaming/download | decided | B | — |
+| phase-03-videos/TD-06 | phase | Backend | Ciclo de status do vídeo e tratamento de falha de processamento | decided | B | — |
+| phase-03-videos/TD-07 | phase | Backend | Organização de buckets/chaves no object storage | decided | A | — |
+| upload-cleanup-policy/TD-01 | ad-hoc | Backend | Política de limpeza de uploads multipart abandonados e vídeos rascunho órfãos | decided | A | @nestjs/schedule |
 
 _Source files:_
 
@@ -79,7 +79,45 @@ _Source files:_
 
 ## Decisions Detail
 
-_No current-scope TDs decided yet — all 8 TDs across `phase-03-videos` (7) and `upload-cleanup-policy` (1) are `_[pending]_`. Run `/plan-resolve phase-03-videos` to decide them._
+### phase-03-videos/TD-01
+
+**Recommendation:** é o módulo oficial do NestJS para filas, entrega retry/backoff/progresso/concorrência nativamente (necessário para jobs de vídeo longos e falha-propensos, ver TD-06), e é o par mais idiomático para um worker de vídeo em NestJS. O custo de adicionar Redis ao Compose é aceitável: a arquitetura já prevê a fila como container dedicado e distinto do Postgres.
+**Libraries:** @nestjs/bullmq, bullmq
+
+### phase-03-videos/TD-02
+
+**Recommendation:** é a única opção que atende simultaneamente aos três requisitos explícitos: suportar 10GB (acima do limite de PUT único), não travar a API (bytes nunca passam pelo processo Node) e permitir retomada em falha de conexão (reenvio por parte, não do arquivo inteiro). Confirmado como compatível com a API S3 usada pelo MinIO via `@aws-sdk/client-s3` + `@aws-sdk/s3-request-presigner`.
+**Libraries:** @aws-sdk/client-s3, @aws-sdk/s3-request-presigner
+
+### phase-03-videos/TD-03
+
+**Recommendation:** é a arquitetura já prevista no diagrama C4 do projeto (container "Video Worker" separado da API), e evita que processamento pesado de vídeo degrade a latência da API. Ambos os processos compartilham o mesmo `VideosModule`/codebase; só o entrypoint de bootstrap difere.
+**Libraries:** —
+
+### phase-03-videos/TD-04
+
+**Recommendation:** cobre com uma API estável exatamente as duas operações que esta fase precisa (`ffprobe` para metadados, `screenshots()` para thumbnail), evitando reescrever parsing de processo por nenhum benefício real. Thumbnail extraída em 10% da duração do vídeo (esclarecido via AMB-1 do `plan-validate`).
+**Libraries:** fluent-ffmpeg
+
+### phase-03-videos/TD-05
+
+**Recommendation:** evita reimplementar `Range`/206 (o storage já faz isso corretamente) e mantém o princípio já decidido na TD-02: a API nunca deve proxear bytes de arquivos grandes. O UUID do vídeo (chave primária da entidade) é o identificador público estável; a URL pré-assinada é um ponteiro de curta duração e sem colisão para o objeto.
+**Libraries:** — (reaproveita @aws-sdk/client-s3 + @aws-sdk/s3-request-presigner já introduzidos na TD-02)
+
+### phase-03-videos/TD-06
+
+**Recommendation:** como a TD-01 já escolhe uma fila com `attempts`/`backoff` nativos, não hesitar em falhas transitórias antes de expor `error` ao usuário é ganho "de graça" e evita retrabalho de upload para problemas que se resolveriam sozinhos. O enum cobre exclusivamente o pipeline técnico de upload/processamento; a dimensão de publicação de conteúdo da Fase 04 é um campo separado (esclarecido via AMB-2 do `plan-validate`).
+**Libraries:** — (reaproveita @nestjs/bullmq já introduzido na TD-01)
+
+### phase-03-videos/TD-07
+
+**Recommendation:** o UUID já elimina colisões sem precisar de um segundo bucket, e um único bucket é mais simples de provisionar e é consistente com o único container de Object Storage do diagrama de arquitetura.
+**Libraries:** — (reaproveita @aws-sdk/client-s3 já introduzido na TD-02)
+
+### upload-cleanup-policy/TD-01
+
+**Recommendation:** divide a responsabilidade pela fronteira natural entre os dois recursos: o storage cuida do que é dele (partes multipart) através de um mecanismo nativo e garantido mesmo com a aplicação fora do ar, enquanto a aplicação cuida apenas do que é exclusivamente seu (o registro `draft` no Postgres, que o storage não enxerga). Isso é mais robusto que a Option B, que depende inteiramente do processo da aplicação estar de pé para proteger o storage contra custo ilimitado.
+**Libraries:** @nestjs/schedule
 
 ## Inherited Decisions Detail
 

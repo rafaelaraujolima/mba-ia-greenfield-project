@@ -2,46 +2,56 @@
 kind: phase
 name: phase-03-videos
 status: dirty
-issue_count: 10
+issue_count: 0
 sources_mtime:
   docs/phases/phase-03-videos/context.md: "2026-09-20T15:22:26-04:00"
   docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-17T20:03:46-04:00"
   docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T11:13:32-04:00"
 issues:
   - id: AMB-1
-    status: open
+    status: resolved
     summary: "Thumbnail frame/timestamp not specified (which point in the video)"
+    resolved_by: phase-03-videos/TD-04
   - id: AMB-2
-    status: open
+    status: resolved
     summary: "Draft/processing status vs Phase 04 publish flow — one state field or two?"
+    resolved_by: phase-03-videos/TD-06
   - id: MD-1
     status: resolved
     summary: "No cleanup policy for abandoned multipart uploads / orphan draft videos"
     resolved_by: upload-cleanup-policy/TD-01
   - id: OQ-1
-    status: open
+    status: resolved
     summary: "TD-01 (queue technology) pending decision"
+    resolved_by: phase-03-videos/TD-01
   - id: OQ-2
-    status: open
+    status: resolved
     summary: "TD-02 (upload strategy for 10GB) pending decision"
+    resolved_by: phase-03-videos/TD-02
   - id: OQ-3
-    status: open
+    status: resolved
     summary: "TD-03 (worker execution model) pending decision"
+    resolved_by: phase-03-videos/TD-03
   - id: OQ-4
-    status: open
+    status: resolved
     summary: "TD-04 (metadata/thumbnail extraction) pending decision"
+    resolved_by: phase-03-videos/TD-04
   - id: OQ-5
-    status: open
+    status: resolved
     summary: "TD-05 (unique URL & streaming/download) pending decision"
+    resolved_by: phase-03-videos/TD-05
   - id: OQ-6
-    status: open
+    status: resolved
     summary: "TD-06 (status lifecycle & failure handling) pending decision"
+    resolved_by: phase-03-videos/TD-06
   - id: OQ-7
-    status: open
+    status: resolved
     summary: "TD-07 (storage bucket/key organization) pending decision"
+    resolved_by: phase-03-videos/TD-07
   - id: OQ-8
-    status: open
+    status: resolved
     summary: "upload-cleanup-policy TD-01 (cleanup policy) pending decision"
+    resolved_by: upload-cleanup-policy/TD-01
 ---
 
 # phase-03-videos — Validation
@@ -54,12 +64,11 @@ _None._
 
 ### Ambiguities
 
-- **AMB-1** — A capability "Geração automática de thumbnail a partir de um frame do vídeo" não especifica **qual** frame/timestamp deve ser usado (primeiro frame? um percentual fixo do vídeo, ex. 10%? o primeiro keyframe após um `-ss`?). `phase-03-videos/TD-04` decide a ferramenta (`fluent-ffmpeg`) mas não o ponto de extração. Explicit choice: adicionar ao contexto/decisão de `phase-03-videos/TD-04` (via `/plan-resolve`) um timestamp/percentual padrão para a extração da thumbnail.
-- **AMB-2** — Não fica claro se o campo de status `draft → processing → ready/error` (capability "Pré-cadastro automático do vídeo como rascunho") é a **mesma** dimensão de estado usada pelo "fluxo de rascunho e publicação" da Fase 04 (Gerenciamento de Vídeos e Canal — `docs/project-plan.md`, Fase 04), ou se são duas dimensões distintas (pipeline técnico de processamento vs. visibilidade/publicação de conteúdo). Isso afeta diretamente o Data Model (um único enum `status` ou dois campos separados, ex. `processing_status` + `publication_status`). Explicit choice: esclarecer em `phase-03-videos/TD-06` (via `/plan-resolve`) que o enum desta fase é exclusivamente o pipeline técnico de upload/processamento, e que a dimensão de publicação (rascunho ↔ publicado) pertence à Fase 04 — ou decidir unificá-los, se for essa a intenção.
+_None._
 
 ### Missing Decisions
 
-_None._ (`MD-1` da rodada anterior foi resolvida pela criação de `upload-cleanup-policy/TD-01` — ver `## Resolved Issues`.)
+_None._
 
 ### Dependency Gaps
 
@@ -71,19 +80,22 @@ _None._
 
 ### Unresolved Open Questions
 
-- **OQ-1** — `phase-03-videos/TD-01` pending — Tecnologia de fila de processamento em segundo plano. Resolution: preencher o campo **Decision:** da TD-01 em `docs/decisions/technical-decisions-phase-03-videos.md`, depois rodar `/plan-validate phase-03-videos` novamente.
-- **OQ-2** — `phase-03-videos/TD-02` pending — Estratégia de upload de vídeos de até 10GB sem travar a API. Resolution: preencher o campo **Decision:** da TD-02, depois rodar `/plan-validate phase-03-videos` novamente.
-- **OQ-3** — `phase-03-videos/TD-03` pending — Modelo de execução do worker de vídeo. Resolution: preencher o campo **Decision:** da TD-03, depois rodar `/plan-validate phase-03-videos` novamente.
-- **OQ-4** — `phase-03-videos/TD-04` pending — Extração de metadados e geração de thumbnail. Resolution: preencher o campo **Decision:** da TD-04, depois rodar `/plan-validate phase-03-videos` novamente.
-- **OQ-5** — `phase-03-videos/TD-05` pending — URL única por vídeo e estratégia de streaming/download. Resolution: preencher o campo **Decision:** da TD-05, depois rodar `/plan-validate phase-03-videos` novamente.
-- **OQ-6** — `phase-03-videos/TD-06` pending — Ciclo de status do vídeo e tratamento de falha de processamento. Resolution: preencher o campo **Decision:** da TD-06, depois rodar `/plan-validate phase-03-videos` novamente.
-- **OQ-7** — `phase-03-videos/TD-07` pending — Organização de buckets/chaves no object storage. Resolution: preencher o campo **Decision:** da TD-07, depois rodar `/plan-validate phase-03-videos` novamente.
-- **OQ-8** — `upload-cleanup-policy/TD-01` pending — Política de limpeza de uploads multipart abandonados e vídeos rascunho órfãos. Resolution: preencher o campo **Decision:** da TD-01 em `docs/decisions/technical-decisions-upload-cleanup-policy.md`, depois rodar `/plan-validate phase-03-videos` novamente.
+_None._
 
 ### UI Coverage Gaps
 
-_None._ (No UI scope in this phase — backend-only, `## UI Inventory` not emitted in context.md.)
+_None._ (No UI scope in this phase — backend-only.)
 
 ## Resolved Issues
 
+- **AMB-1** _(resolved_by phase-03-videos/TD-04)_ — Timestamp da thumbnail indefinido. Resolvido: extração fixada em 10% da duração do vídeo (`screenshots({ timestamps: ['10%'] })`).
+- **AMB-2** _(resolved_by phase-03-videos/TD-06)_ — Sobreposição entre o status de processamento desta fase e o fluxo de publicação da Fase 04. Resolvido: dimensões distintas — o enum `draft|processing|ready|error` é exclusivamente o pipeline técnico; publicação é um campo/estado separado, de responsabilidade da Fase 04.
 - **MD-1** _(resolved_by upload-cleanup-policy/TD-01)_ — Nenhuma TD definia política de limpeza para uploads multipart abandonados / vídeos rascunho órfãos. Resolvido pela pesquisa ad-hoc que criou `docs/decisions/technical-decisions-upload-cleanup-policy.md`.
+- **OQ-1** _(resolved_by phase-03-videos/TD-01)_ — Tecnologia de fila decidida: BullMQ + Redis via `@nestjs/bullmq`.
+- **OQ-2** _(resolved_by phase-03-videos/TD-02)_ — Estratégia de upload decidida: multipart direto ao storage via URLs pré-assinadas.
+- **OQ-3** _(resolved_by phase-03-videos/TD-03)_ — Modelo de execução do worker decidido: processo/container dedicado, módulo compartilhado com a API.
+- **OQ-4** _(resolved_by phase-03-videos/TD-04)_ — Extração de metadados/thumbnail decidida: `fluent-ffmpeg`.
+- **OQ-5** _(resolved_by phase-03-videos/TD-05)_ — URL única e streaming/download decididos: redirect para URL pré-assinada de leitura (GET).
+- **OQ-6** _(resolved_by phase-03-videos/TD-06)_ — Ciclo de status decidido: enum + retry automático via BullMQ antes de marcar `error`.
+- **OQ-7** _(resolved_by phase-03-videos/TD-07)_ — Organização do storage decidida: bucket único, chave prefixada por UUID do vídeo.
+- **OQ-8** _(resolved_by upload-cleanup-policy/TD-01)_ — Política de limpeza decidida: lifecycle rule nativa do storage (`AbortIncompleteMultipartUpload`) + cron `@nestjs/schedule` para os drafts órfãos.
