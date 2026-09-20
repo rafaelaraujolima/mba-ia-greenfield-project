@@ -4,8 +4,8 @@ name: phase-03-videos
 sources_mtime:
   docs/project-plan.md: "2026-09-17T19:27:23-04:00"
   docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-17T20:03:46-04:00"
+  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T11:13:32-04:00"
   docs/decisions/technical-decisions-openapi-docs-nestjs.md: "2026-09-17T19:27:23-04:00"
-  docs/decisions/technical-decisions-next-frontend-openapi-typing.md: "2026-09-17T19:27:23-04:00"
   docs/phases/phase-01-configuracao-base/context.md: "2026-09-17T19:27:23-04:00"
   docs/phases/phase-02-auth/context.md: "2026-09-17T19:27:23-04:00"
   docs/phases/phase-02-auth-frontend/context.md: "2026-09-17T19:27:23-04:00"
@@ -56,10 +56,12 @@ sources_mtime:
 | phase-03-videos/TD-05 | phase | Backend | URL única por vídeo e estratégia de streaming/download | pending | — | — |
 | phase-03-videos/TD-06 | phase | Backend | Ciclo de status do vídeo e tratamento de falha de processamento | pending | — | — |
 | phase-03-videos/TD-07 | phase | Backend | Organização de buckets/chaves no object storage | pending | — | — |
+| upload-cleanup-policy/TD-01 | ad-hoc | Backend | Política de limpeza de uploads multipart abandonados e vídeos rascunho órfãos | pending | — | — |
 
 _Source files:_
 
 - phase-03-videos — `docs/decisions/technical-decisions-phase-03-videos.md` (scope_type: phase)
+- upload-cleanup-policy — `docs/decisions/technical-decisions-upload-cleanup-policy.md` (scope_type: ad-hoc)
 
 ## Capability Coverage
 
@@ -67,8 +69,8 @@ _Source files:_
 |-----------------------------------|------------|
 | Serviço de armazenamento de arquivos (vídeos e thumbnails) | phase-03-videos/TD-07 |
 | Serviço de processamento em segundo plano (filas) | phase-03-videos/TD-01, phase-03-videos/TD-03 |
-| Upload de vídeos com suporte a arquivos de até 10GB sem impacto na performance | phase-03-videos/TD-02 |
-| Pré-cadastro automático do vídeo como rascunho ao iniciar o upload | phase-03-videos/TD-06 |
+| Upload de vídeos com suporte a arquivos de até 10GB sem impacto na performance | phase-03-videos/TD-02, upload-cleanup-policy/TD-01 |
+| Pré-cadastro automático do vídeo como rascunho ao iniciar o upload | phase-03-videos/TD-06, upload-cleanup-policy/TD-01 |
 | Processamento automático do vídeo após upload (extração de duração e metadados) | phase-03-videos/TD-03, phase-03-videos/TD-04, phase-03-videos/TD-06 |
 | Geração automática de thumbnail a partir de um frame do vídeo | phase-03-videos/TD-04 |
 | URL única por vídeo, sem conflito com outros vídeos | phase-03-videos/TD-05 |
@@ -77,7 +79,7 @@ _Source files:_
 
 ## Decisions Detail
 
-_No current-scope TDs decided yet — all 7 TDs in `phase-03-videos` are `_[pending]_`. Run `/plan-resolve phase-03-videos` to decide them._
+_No current-scope TDs decided yet — all 8 TDs across `phase-03-videos` (7) and `upload-cleanup-policy` (1) are `_[pending]_`. Run `/plan-resolve phase-03-videos` to decide them._
 
 ## Inherited Decisions Detail
 
@@ -96,31 +98,6 @@ _No current-scope TDs decided yet — all 7 TDs in `phase-03-videos` are `_[pend
 ### openapi-docs-nestjs/TD-03
 
 **Recommendation:** Option B (Apenas em dev/staging via env flag) — alinha com a postura defensiva já estabelecida em phase 02 e não compromete consumidores legítimos (o `openapi.json` commitado em TD-02 cumpre o papel de "spec consultável fora da UI").
-**Libraries:** —
-
-### next-frontend-openapi-typing/TD-01
-
-**Recommendation:** Option A (`openapi-typescript` + `openapi-fetch`) — a BFF estrita torna a superfície de SDK sem valor no client; abordagem types-first casa com o resto da fundação FE; a tipagem do MSW é resolvida pelo mesmo símbolo `paths`.
-**Libraries:** openapi-typescript, openapi-fetch
-
-### next-frontend-openapi-typing/TD-02
-
-**Recommendation:** Option B (cópia local commitada + script de sync na raiz do repo) — preserva a independência dos stacks de Compose; o drift é eliminado estruturalmente quando combinado com o freshness check de CI da TD-03; o arquivo commitado é um artefato real em code review.
-**Libraries:** —
-
-### next-frontend-openapi-typing/TD-03
-
-**Recommendation:** Option C (commitado + freshness check de CI) — é a única opção que torna o drift de contrato visível (diff de PR) e impossível de mergear acidentalmente (CI falha).
-**Libraries:** —
-
-### next-frontend-openapi-typing/TD-04
-
-**Recommendation:** Option A (`lib/api/contracts.ts` único com aliases explícitos) — trata pass-through e reshape com o mesmo mecanismo; único ponto de grep para "que shape a BFF expõe"; desacopla imports de Componentes dos caminhos de arquivo do App Router.
-**Libraries:** —
-
-### next-frontend-openapi-typing/TD-05
-
-**Recommendation:** Option A (handlers MSW escritos à mão, tipados via `paths`) — determinismo sobre auto-geração; coerência com a recomendação da TD-01; adequado à escala atual da API.
 **Libraries:** —
 
 ### phase-01-configuracao-base/TD-01
@@ -275,7 +252,7 @@ _None._
 | Exception Filter | Unit + E2E |
 | Middleware | E2E |
 
-Source: `testing-guide-nestjs-project` Skill, §3 Feature Implementation Checklist. Per §1/§2 of the same guide: mock across module boundaries (not within); do not mock configured libs (e.g., a real BullMQ/Redis or real MinIO/S3-compatible instance in integration tests, not a mocked client); integration tests prove the DB/external-system contract, E2E tests prove the HTTP contract — neither substitutes the other. This governs how Phase 03's queue, storage, and worker integrations must be tested (real Redis/MinIO via Compose, not mocks).
+Source: `testing-guide-nestjs-project` Skill, §3 Feature Implementation Checklist. Per §1/§2 of the same guide: mock across module boundaries (not within); do not mock configured libs (e.g., a real BullMQ/Redis or real MinIO/S3-compatible instance in integration tests, not a mocked client); integration tests prove the DB/external-system contract, E2E tests prove the HTTP contract — neither substitutes the other. This governs how Phase 03's queue, storage, and worker integrations must be tested (real Redis/MinIO via Compose, not mocks). Applies equally to the scheduled cleanup job (`upload-cleanup-policy/TD-01`) — its cron/lifecycle behavior must be exercised against real Redis/MinIO fixtures, not mocked storage clients.
 
 ### next-frontend
 
