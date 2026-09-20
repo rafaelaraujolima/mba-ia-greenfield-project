@@ -4,8 +4,9 @@ name: phase-03-videos
 status: dirty
 issue_count: 10
 sources_mtime:
-  docs/phases/phase-03-videos/context.md: "2026-09-20T10:44:27-04:00"
+  docs/phases/phase-03-videos/context.md: "2026-09-20T15:22:26-04:00"
   docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-17T20:03:46-04:00"
+  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T11:13:32-04:00"
 issues:
   - id: AMB-1
     status: open
@@ -14,8 +15,9 @@ issues:
     status: open
     summary: "Draft/processing status vs Phase 04 publish flow — one state field or two?"
   - id: MD-1
-    status: open
+    status: resolved
     summary: "No cleanup policy for abandoned multipart uploads / orphan draft videos"
+    resolved_by: upload-cleanup-policy/TD-01
   - id: OQ-1
     status: open
     summary: "TD-01 (queue technology) pending decision"
@@ -37,6 +39,9 @@ issues:
   - id: OQ-7
     status: open
     summary: "TD-07 (storage bucket/key organization) pending decision"
+  - id: OQ-8
+    status: open
+    summary: "upload-cleanup-policy TD-01 (cleanup policy) pending decision"
 ---
 
 # phase-03-videos — Validation
@@ -54,7 +59,7 @@ _None._
 
 ### Missing Decisions
 
-- **MD-1** — Nenhuma TD define uma política de limpeza para (a) uploads multipart iniciados via `phase-03-videos/TD-02` que nunca são completados (partes órfãs no storage, cobradas indefinidamente) nem para (b) registros de vídeo em `draft` (pré-cadastrados ao iniciar o upload, per capability "Pré-cadastro automático") cujo upload nunca é finalizado. Explicit choice: rodar `/research phase-03-videos` para adicionar uma TD cobrindo a estratégia de limpeza (ex. TTL/job periódico que aborta multipart uploads expirados via `AbortMultipartUpload` e remove/expira vídeos `draft` sem atividade), ou documentar explicitamente que isso é aceito como débito técnico fora do escopo desta fase.
+_None._ (`MD-1` da rodada anterior foi resolvida pela criação de `upload-cleanup-policy/TD-01` — ver `## Resolved Issues`.)
 
 ### Dependency Gaps
 
@@ -73,6 +78,7 @@ _None._
 - **OQ-5** — `phase-03-videos/TD-05` pending — URL única por vídeo e estratégia de streaming/download. Resolution: preencher o campo **Decision:** da TD-05, depois rodar `/plan-validate phase-03-videos` novamente.
 - **OQ-6** — `phase-03-videos/TD-06` pending — Ciclo de status do vídeo e tratamento de falha de processamento. Resolution: preencher o campo **Decision:** da TD-06, depois rodar `/plan-validate phase-03-videos` novamente.
 - **OQ-7** — `phase-03-videos/TD-07` pending — Organização de buckets/chaves no object storage. Resolution: preencher o campo **Decision:** da TD-07, depois rodar `/plan-validate phase-03-videos` novamente.
+- **OQ-8** — `upload-cleanup-policy/TD-01` pending — Política de limpeza de uploads multipart abandonados e vídeos rascunho órfãos. Resolution: preencher o campo **Decision:** da TD-01 em `docs/decisions/technical-decisions-upload-cleanup-policy.md`, depois rodar `/plan-validate phase-03-videos` novamente.
 
 ### UI Coverage Gaps
 
@@ -80,4 +86,4 @@ _None._ (No UI scope in this phase — backend-only, `## UI Inventory` not emitt
 
 ## Resolved Issues
 
-_No issues resolved yet._
+- **MD-1** _(resolved_by upload-cleanup-policy/TD-01)_ — Nenhuma TD definia política de limpeza para uploads multipart abandonados / vídeos rascunho órfãos. Resolvido pela pesquisa ad-hoc que criou `docs/decisions/technical-decisions-upload-cleanup-policy.md`.
