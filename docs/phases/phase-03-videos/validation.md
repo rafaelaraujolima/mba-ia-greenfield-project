@@ -1,12 +1,12 @@
 ---
 kind: phase
 name: phase-03-videos
-status: dirty
+status: clean
 issue_count: 0
 sources_mtime:
-  docs/phases/phase-03-videos/context.md: "2026-09-20T15:22:26-04:00"
-  docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-17T20:03:46-04:00"
-  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T11:13:32-04:00"
+  docs/phases/phase-03-videos/context.md: "2026-09-20T15:34:30-04:00"
+  docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-20T15:32:08-04:00"
+  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T15:32:18-04:00"
 issues:
   - id: AMB-1
     status: resolved
