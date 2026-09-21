@@ -198,4 +198,96 @@ describe('Videos (e2e)', () => {
       expect(res.body.error).toBe('VIDEO_NOT_FOUND');
     }, 20000);
   });
+
+  describe('POST /videos/:id/complete', () => {
+    async function createDraftVideoWithUploadedPart(
+      accessToken: string,
+      channelId: string,
+    ): Promise<{ videoId: string; eTag: string }> {
+      const createRes = await request(app.getHttpServer())
+        .post(`/channels/${channelId}/videos`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ title: 'x', contentType: 'video/mp4', fileSizeBytes: 1024 });
+      const videoId = createRes.body.id;
+
+      const partsRes = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/upload-parts`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ partNumbers: [1] });
+
+      const uploadRes = await fetch(partsRes.body.parts[0].url, {
+        method: 'PUT',
+        body: Buffer.from('fake video bytes'),
+      });
+      const eTag = uploadRes.headers.get('etag')!;
+
+      return { videoId, eTag };
+    }
+
+    it('returns 200 with status processing for valid parts', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const { videoId, eTag } = await createDraftVideoWithUploadedPart(
+        accessToken,
+        channelId,
+      );
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/complete`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ parts: [{ partNumber: 1, eTag }] })
+        .expect(200);
+
+      expect(res.body.id).toBe(videoId);
+      expect(res.body.status).toBe('processing');
+    }, 20000);
+
+    it('returns 400 with VALIDATION_ERROR for empty parts', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const { videoId } = await createDraftVideoWithUploadedPart(
+        accessToken,
+        channelId,
+      );
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/complete`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ parts: [] })
+        .expect(400);
+
+      expect(res.body.error).toBe('VALIDATION_ERROR');
+    }, 20000);
+
+    it('returns 400 with INVALID_MULTIPART_COMPLETION for a wrong eTag', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const { videoId } = await createDraftVideoWithUploadedPart(
+        accessToken,
+        channelId,
+      );
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/complete`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ parts: [{ partNumber: 1, eTag: '"wrong-etag"' }] })
+        .expect(400);
+
+      expect(res.body.error).toBe('INVALID_MULTIPART_COMPLETION');
+    }, 20000);
+
+    it('returns 409 with INVALID_VIDEO_STATE when video is not draft', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const { videoId, eTag } = await createDraftVideoWithUploadedPart(
+        accessToken,
+        channelId,
+      );
+      await videoRepository.update(videoId, { status: VideoStatus.READY });
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/complete`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ parts: [{ partNumber: 1, eTag }] })
+        .expect(409);
+
+      expect(res.body.error).toBe('INVALID_VIDEO_STATE');
+    }, 20000);
+  });
 });

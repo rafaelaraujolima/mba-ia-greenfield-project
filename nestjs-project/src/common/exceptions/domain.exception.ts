@@ -84,3 +84,9 @@ export class FileSizeExceededException extends DomainException {
     super('FILE_SIZE_EXCEEDED', 400, 'File size exceeds the 10GB limit');
   }
 }
+
+export class InvalidMultipartCompletionException extends DomainException {
+  constructor(message = 'Multipart upload parts are empty or incomplete') {
+    super('INVALID_MULTIPART_COMPLETION', 400, message);
+  }
+}

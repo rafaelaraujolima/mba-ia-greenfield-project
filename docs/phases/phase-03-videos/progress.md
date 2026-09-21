@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in_progress
-**SIs:** 3/7 completed
+**SIs:** 4/7 completed
 
 ### SI-03.1 — Dependências, configuração e infraestrutura Docker
 - **Status:** complete
@@ -19,9 +19,9 @@
 - **Observations:** Added the 6 planned `DomainException` subclasses, `CreateVideoDto`/`RequestUploadPartsDto`, `VideosService.initiateUpload`/`requestUploadParts`, and `VideosController` with both endpoints. Added `ChannelsService.findById` (new, small — needed for ownership checks; not previously exposed) and a shared `StorageModule` (`S3_CLIENT` DI token wrapping `S3Client`) so upcoming SIs (complete/stream/download/cleanup) reuse the same client instead of each re-instantiating one. `initiateUpload` generates the video's UUID itself (`randomUUID()`) before persisting so the storage key (`videos/{id}/original.<ext>`) can be computed ahead of the `CreateMultipartUploadCommand` call, per `TD-07`'s key convention. Discovered `npm run test:e2e` was missing `--runInBand` despite `nestjs-project/CLAUDE.md` documenting it as already configured — with only 2 e2e files this never surfaced, but the new `videos.e2e-spec.ts` running concurrently against the shared test DB caused real FK-violation and entity-not-found races in both the new and the pre-existing `auth.e2e-spec.ts`; fixed the `test:e2e` script to match the documented convention. Also raised the default Jest `testTimeout` to 30000 in `package.json` (unit/integration config) after `auth.service.integration-spec.ts` intermittently exceeded the 5s default under the heavier suite. `npx tsc --noEmit` clean; full suite 167/167 (unit+integration) + 59/59 (e2e) green; lint exits 0 with only pre-existing debt plus the same `any`-typed `res.body` pattern already used throughout `auth.e2e-spec.ts`.
 
 ### SI-03.4 — Completar upload e enfileirar processamento
-- **Status:** pending
-- **Tests:** —
-- **Observations:** none
+- **Status:** complete
+- **Tests:** `src/videos/videos.service.spec.ts` (+6 unit tests), `src/videos/videos.service.integration-spec.ts` (+3 tests, real MinIO `CompleteMultipartUploadCommand` + real BullMQ enqueue), `test/videos.e2e-spec.ts` (+4 e2e tests, real presigned-URL PUT to MinIO) — all passing
+- **Observations:** Added `CompleteUploadDto`/`CompletedPartDto` (nested array validation via `class-validator` + `class-transformer`), `VideosService.completeUpload`, `POST /videos/:id/complete`, and `InvalidMultipartCompletionException`. Registered `BullModule.registerQueue({name: 'video-processing'})` in `VideosModule` and inject the `Queue` via `@InjectQueue`; on successful `CompleteMultipartUploadCommand` the service transitions the video to `processing`, clears `storage_upload_id`, and enqueues a `video.process` job (`attempts: 3`, exponential backoff `5000ms`, per `TD-06`). S3/MinIO completion errors (`S3ServiceException`, e.g. a wrong ETag) are caught and re-mapped to `InvalidMultipartCompletionException`; non-S3 errors propagate unchanged, per the service error-handling rule. Integration and e2e tests perform a real multipart upload (via `UploadPartCommand`/presigned `PUT`) to get a genuine ETag before completing, so the MinIO completion path is exercised for real, not mocked. Forgot `@HttpCode(HttpStatus.OK)` on the controller initially (NestJS defaults `POST` to 201) — caught immediately by the e2e test asserting `.expect(200)`. `npx tsc --noEmit` clean; full suite 176/176 (unit+integration) + 63/63 (e2e) green; lint exits 0 with only pre-existing debt.
 
 ### SI-03.5 — Worker de processamento de vídeo
 - **Status:** pending

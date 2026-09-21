@@ -1,14 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { ConfigType } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import {
+  CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
+  S3ServiceException,
   UploadPartCommand,
   type S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import type { Queue } from 'bullmq';
 import { ChannelsService } from '../channels/channels.service';
 import storageConfig from '../config/storage.config';
 import { S3_CLIENT } from '../storage/storage.constants';
@@ -16,16 +20,25 @@ import {
   ChannelNotFoundException,
   ChannelNotOwnedException,
   FileSizeExceededException,
+  InvalidMultipartCompletionException,
   InvalidVideoStateException,
   VideoNotFoundException,
   VideoNotOwnedException,
 } from '../common/exceptions/domain.exception';
+import { CompleteUploadDto } from './dto/complete-upload.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { RequestUploadPartsDto } from './dto/request-upload-parts.dto';
 import { Video, VideoStatus } from './entities/video.entity';
-import { MAX_VIDEO_FILE_SIZE_BYTES } from './videos.constants';
+import type { VideoProcessJobData } from './video-process.types';
+import {
+  MAX_VIDEO_FILE_SIZE_BYTES,
+  VIDEO_PROCESSING_QUEUE,
+  VIDEO_PROCESS_JOB,
+} from './videos.constants';
 
 const UPLOAD_PART_URL_EXPIRATION_SECONDS = 900;
+const VIDEO_PROCESS_JOB_ATTEMPTS = 3;
+const VIDEO_PROCESS_JOB_BACKOFF_DELAY_MS = 5000;
 
 export interface UploadPartUrl {
   partNumber: number;
@@ -41,6 +54,8 @@ export class VideosService {
     @Inject(S3_CLIENT) private readonly s3Client: S3Client,
     @Inject(storageConfig.KEY)
     private readonly storage: ConfigType<typeof storageConfig>,
+    @InjectQueue(VIDEO_PROCESSING_QUEUE)
+    private readonly videoProcessingQueue: Queue<VideoProcessJobData>,
   ) {}
 
   async initiateUpload(
@@ -105,6 +120,56 @@ export class VideosService {
         ),
       })),
     );
+  }
+
+  async completeUpload(
+    videoId: string,
+    userId: string,
+    dto: CompleteUploadDto,
+  ): Promise<Video> {
+    const video = await this.findOwnedVideoOrFail(videoId, userId);
+    if (video.status !== VideoStatus.DRAFT) {
+      throw new InvalidVideoStateException();
+    }
+
+    try {
+      await this.s3Client.send(
+        new CompleteMultipartUploadCommand({
+          Bucket: this.storage.bucket,
+          Key: video.storage_key,
+          UploadId: video.storage_upload_id!,
+          MultipartUpload: {
+            Parts: dto.parts.map((part) => ({
+              PartNumber: part.partNumber,
+              ETag: part.eTag,
+            })),
+          },
+        }),
+      );
+    } catch (err) {
+      if (err instanceof S3ServiceException) {
+        throw new InvalidMultipartCompletionException();
+      }
+      throw err;
+    }
+
+    video.status = VideoStatus.PROCESSING;
+    video.storage_upload_id = null;
+    const savedVideo = await this.videoRepository.save(video);
+
+    await this.videoProcessingQueue.add(
+      VIDEO_PROCESS_JOB,
+      { videoId: savedVideo.id },
+      {
+        attempts: VIDEO_PROCESS_JOB_ATTEMPTS,
+        backoff: {
+          type: 'exponential',
+          delay: VIDEO_PROCESS_JOB_BACKOFF_DELAY_MS,
+        },
+      },
+    );
+
+    return savedVideo;
   }
 
   private async findOwnedVideoOrFail(
