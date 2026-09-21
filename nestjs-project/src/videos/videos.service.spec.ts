@@ -20,6 +20,7 @@ function makeVideoRepository(overrides: Record<string, jest.Mock> = {}): any {
     create: jest.fn((data) => data),
     save: jest.fn((data) => Promise.resolve({ id: 'video-id', ...data })),
     findOne: jest.fn(),
+    findOneBy: jest.fn(),
     ...overrides,
   };
 }
@@ -362,6 +363,130 @@ describe('VideosService', () => {
         { videoId: 'video-id' },
         expect.objectContaining({ attempts: 3 }),
       );
+    });
+  });
+
+  describe('findOne', () => {
+    it('throws VideoNotFoundException when the video does not exist', async () => {
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(null),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+      );
+
+      await expect(service.findOne('video-id')).rejects.toThrow(
+        VideoNotFoundException,
+      );
+    });
+
+    it('returns a ready video to an anonymous requester', async () => {
+      const readyVideo = {
+        id: 'video-id',
+        status: VideoStatus.READY,
+        channel: { user_id: 'owner-id' },
+      };
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(readyVideo),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+      );
+
+      const result = await service.findOne('video-id');
+      expect(result).toBe(readyVideo);
+    });
+
+    it('throws VideoNotFoundException for a non-ready video accessed by a non-owner', async () => {
+      const draftVideo = {
+        id: 'video-id',
+        status: VideoStatus.DRAFT,
+        channel: { user_id: 'owner-id' },
+      };
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(draftVideo),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+      );
+
+      await expect(service.findOne('video-id', 'other-user')).rejects.toThrow(
+        VideoNotFoundException,
+      );
+      await expect(service.findOne('video-id')).rejects.toThrow(
+        VideoNotFoundException,
+      );
+    });
+
+    it('returns a non-ready video to its owner', async () => {
+      const draftVideo = {
+        id: 'video-id',
+        status: VideoStatus.DRAFT,
+        channel: { user_id: 'owner-id' },
+      };
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(draftVideo),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+      );
+
+      const result = await service.findOne('video-id', 'owner-id');
+      expect(result).toBe(draftVideo);
+    });
+  });
+
+  describe('getPlaybackUrl', () => {
+    it('throws VideoNotFoundException when the video does not exist', async () => {
+      const videoRepository = makeVideoRepository({
+        findOneBy: jest.fn().mockResolvedValue(null),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+      );
+
+      await expect(
+        service.getPlaybackUrl('video-id', 'inline'),
+      ).rejects.toThrow(VideoNotFoundException);
+    });
+
+    it('throws InvalidVideoStateException when the video is not ready', async () => {
+      const videoRepository = makeVideoRepository({
+        findOneBy: jest
+          .fn()
+          .mockResolvedValue({ id: 'video-id', status: VideoStatus.DRAFT }),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+      );
+
+      await expect(
+        service.getPlaybackUrl('video-id', 'inline'),
+      ).rejects.toThrow(InvalidVideoStateException);
     });
   });
 });

@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
+  GetObjectCommand,
   S3ServiceException,
   UploadPartCommand,
   type S3Client,
@@ -39,6 +40,9 @@ import {
 const UPLOAD_PART_URL_EXPIRATION_SECONDS = 900;
 const VIDEO_PROCESS_JOB_ATTEMPTS = 3;
 const VIDEO_PROCESS_JOB_BACKOFF_DELAY_MS = 5000;
+const PLAYBACK_URL_EXPIRATION_SECONDS = 900;
+
+export type PlaybackDisposition = 'inline' | 'attachment';
 
 export interface UploadPartUrl {
   partNumber: number;
@@ -170,6 +174,44 @@ export class VideosService {
     );
 
     return savedVideo;
+  }
+
+  async findOne(videoId: string, userId?: string): Promise<Video> {
+    const video = await this.videoRepository.findOne({
+      where: { id: videoId },
+      relations: ['channel'],
+    });
+    if (!video) throw new VideoNotFoundException();
+
+    const isOwner = userId != null && video.channel.user_id === userId;
+    if (video.status !== VideoStatus.READY && !isOwner) {
+      throw new VideoNotFoundException();
+    }
+
+    return video;
+  }
+
+  async getPlaybackUrl(
+    videoId: string,
+    disposition: PlaybackDisposition,
+  ): Promise<string> {
+    const video = await this.videoRepository.findOneBy({ id: videoId });
+    if (!video) throw new VideoNotFoundException();
+    if (video.status !== VideoStatus.READY) {
+      throw new InvalidVideoStateException();
+    }
+
+    return getSignedUrl(
+      this.s3Client,
+      new GetObjectCommand({
+        Bucket: this.storage.bucket,
+        Key: video.storage_key,
+        ...(disposition === 'attachment' && {
+          ResponseContentDisposition: 'attachment',
+        }),
+      }),
+      { expiresIn: PLAYBACK_URL_EXPIRATION_SECONDS },
+    );
   }
 
   private async findOwnedVideoOrFail(

@@ -290,4 +290,140 @@ describe('Videos (e2e)', () => {
       expect(res.body.error).toBe('INVALID_VIDEO_STATE');
     }, 20000);
   });
+
+  describe('GET /videos/:id', () => {
+    async function createVideo(
+      channelId: string,
+      status: VideoStatus,
+    ): Promise<string> {
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'My video',
+          status,
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+      return video.id;
+    }
+
+    it('returns 200 with metadata for a ready video, without authentication', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.READY);
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${videoId}`)
+        .expect(200);
+
+      expect(res.body.id).toBe(videoId);
+      expect(res.body.status).toBe('ready');
+    });
+
+    it('returns 404 for a draft video accessed anonymously', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.DRAFT);
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${videoId}`)
+        .expect(404);
+
+      expect(res.body.error).toBe('VIDEO_NOT_FOUND');
+    });
+
+    it('returns 404 for a draft video accessed by a non-owner', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const other = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.DRAFT);
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${videoId}`)
+        .set('Authorization', `Bearer ${other.accessToken}`)
+        .expect(404);
+
+      expect(res.body.error).toBe('VIDEO_NOT_FOUND');
+    });
+
+    it('returns 200 with status draft for the owner', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.DRAFT);
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${videoId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body.status).toBe('draft');
+    });
+  });
+
+  describe('GET /videos/:id/stream', () => {
+    it('returns 302 redirecting to a pre-signed URL for a ready video', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'x',
+          status: VideoStatus.READY,
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${video.id}/stream`)
+        .expect(302);
+
+      expect(res.headers.location).toContain(video.storage_key);
+      expect(res.headers.location).not.toContain(
+        'response-content-disposition',
+      );
+    });
+
+    it('returns 409 with INVALID_VIDEO_STATE for a non-ready video', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'x',
+          status: VideoStatus.PROCESSING,
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${video.id}/stream`)
+        .expect(409);
+
+      expect(res.body.error).toBe('INVALID_VIDEO_STATE');
+    });
+  });
+
+  describe('GET /videos/:id/download', () => {
+    it('returns 302 redirecting to a pre-signed attachment URL', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'x',
+          status: VideoStatus.READY,
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${video.id}/download`)
+        .expect(302);
+
+      expect(res.headers.location).toContain(
+        'response-content-disposition=attachment',
+      );
+    });
+
+    it('returns 404 with VIDEO_NOT_FOUND for a non-existent video', async () => {
+      const res = await request(app.getHttpServer())
+        .get('/videos/00000000-0000-0000-0000-000000000000/download')
+        .expect(404);
+
+      expect(res.body.error).toBe('VIDEO_NOT_FOUND');
+    });
+  });
 });

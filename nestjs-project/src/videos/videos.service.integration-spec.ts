@@ -13,6 +13,7 @@ import {
   FileSizeExceededException,
   InvalidMultipartCompletionException,
   InvalidVideoStateException,
+  VideoNotFoundException,
 } from '../common/exceptions/domain.exception';
 import {
   cleanAllTables,
@@ -255,5 +256,65 @@ describe('VideosService (integration)', () => {
         }),
       ).rejects.toThrow(InvalidVideoStateException);
     }, 20000);
+  });
+
+  describe('getPlaybackUrl', () => {
+    it('generates a pre-signed inline URL for a ready video', async () => {
+      const { channel } = await createUserAndChannel();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channel.id,
+          title: 'Ready video',
+          status: VideoStatus.READY,
+          storage_key: `videos/${channel.id}/original.mp4`,
+        }),
+      );
+
+      const url = await videosService.getPlaybackUrl(video.id, 'inline');
+
+      expect(url).toContain(video.storage_key);
+      expect(url).not.toContain('response-content-disposition');
+    });
+
+    it('generates a pre-signed attachment URL for a ready video', async () => {
+      const { channel } = await createUserAndChannel();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channel.id,
+          title: 'Ready video',
+          status: VideoStatus.READY,
+          storage_key: `videos/${channel.id}/original.mp4`,
+        }),
+      );
+
+      const url = await videosService.getPlaybackUrl(video.id, 'attachment');
+
+      expect(url).toContain('response-content-disposition=attachment');
+    });
+
+    it('throws InvalidVideoStateException for a non-ready video', async () => {
+      const { channel } = await createUserAndChannel();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channel.id,
+          title: 'Draft video',
+          status: VideoStatus.DRAFT,
+          storage_key: `videos/${channel.id}/original.mp4`,
+        }),
+      );
+
+      await expect(
+        videosService.getPlaybackUrl(video.id, 'inline'),
+      ).rejects.toThrow(InvalidVideoStateException);
+    });
+
+    it('throws VideoNotFoundException for a non-existent video', async () => {
+      await expect(
+        videosService.getPlaybackUrl(
+          '00000000-0000-0000-0000-000000000000',
+          'inline',
+        ),
+      ).rejects.toThrow(VideoNotFoundException);
+    });
   });
 });

@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   HttpStatus,
   Param,
   Post,
+  Redirect,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -16,6 +18,7 @@ import {
 import { ApiErrorEnvelope } from '../common/openapi/api-error-envelope.dto';
 import type { JwtPayload } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { CompleteUploadDto } from './dto/complete-upload.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { RequestUploadPartsDto } from './dto/request-upload-parts.dto';
@@ -179,5 +182,115 @@ export class VideosController {
   ): Promise<{ id: string; status: string }> {
     const video = await this.videosService.completeUpload(id, user.sub, dto);
     return { id: video.id, status: video.status };
+  }
+
+  @Get('videos/:id')
+  @Public()
+  @ApiOperation({
+    summary: 'Get a video',
+    description:
+      'Returns video metadata. Anonymous and non-owner requesters only see videos with status "ready"; the channel owner can see any status.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Video metadata',
+    schema: {
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        title: { type: 'string' },
+        status: { type: 'string', example: 'ready' },
+        durationSeconds: { type: 'number', nullable: true },
+        width: { type: 'number', nullable: true },
+        height: { type: 'number', nullable: true },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found or not visible to the requester',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload | undefined,
+  ): Promise<{
+    id: string;
+    title: string;
+    status: string;
+    durationSeconds: number | null;
+    width: number | null;
+    height: number | null;
+    createdAt: string;
+  }> {
+    const video = await this.videosService.findOne(id, user?.sub);
+    return {
+      id: video.id,
+      title: video.title,
+      status: video.status,
+      durationSeconds:
+        video.duration_seconds != null ? Number(video.duration_seconds) : null,
+      width: video.width,
+      height: video.height,
+      createdAt: video.created_at.toISOString(),
+    };
+  }
+
+  @Get('videos/:id/stream')
+  @Public()
+  @Redirect()
+  @ApiOperation({
+    summary: 'Stream a video',
+    description:
+      'Redirects to a short-lived pre-signed URL for inline playback. MinIO/S3 natively serves Range/206 for the resulting URL.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirect to a pre-signed read URL',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Video is not ready',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async stream(
+    @Param('id') id: string,
+  ): Promise<{ url: string; statusCode: number }> {
+    const url = await this.videosService.getPlaybackUrl(id, 'inline');
+    return { url, statusCode: HttpStatus.FOUND };
+  }
+
+  @Get('videos/:id/download')
+  @Public()
+  @Redirect()
+  @ApiOperation({
+    summary: 'Download a video',
+    description:
+      'Redirects to a short-lived pre-signed URL with a Content-Disposition: attachment header.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirect to a pre-signed download URL',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Video is not ready',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async download(
+    @Param('id') id: string,
+  ): Promise<{ url: string; statusCode: number }> {
+    const url = await this.videosService.getPlaybackUrl(id, 'attachment');
+    return { url, statusCode: HttpStatus.FOUND };
   }
 }
