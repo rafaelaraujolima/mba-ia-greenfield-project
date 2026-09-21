@@ -4,7 +4,7 @@ name: phase-03-videos
 sources_mtime:
   docs/project-plan.md: "2026-09-17T19:27:23-04:00"
   docs/decisions/technical-decisions-phase-03-videos.md: "2026-09-20T15:32:08-04:00"
-  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-20T15:32:18-04:00"
+  docs/decisions/technical-decisions-upload-cleanup-policy.md: "2026-09-21T06:19:35-04:00"
   docs/decisions/technical-decisions-openapi-docs-nestjs.md: "2026-09-17T19:27:23-04:00"
   docs/phases/phase-01-configuracao-base/context.md: "2026-09-17T19:27:23-04:00"
   docs/phases/phase-02-auth/context.md: "2026-09-17T19:27:23-04:00"
@@ -56,7 +56,7 @@ sources_mtime:
 | phase-03-videos/TD-05 | phase | Backend | URL única por vídeo e estratégia de streaming/download | decided | B | — |
 | phase-03-videos/TD-06 | phase | Backend | Ciclo de status do vídeo e tratamento de falha de processamento | decided | B | — |
 | phase-03-videos/TD-07 | phase | Backend | Organização de buckets/chaves no object storage | decided | A | — |
-| upload-cleanup-policy/TD-01 | ad-hoc | Backend | Política de limpeza de uploads multipart abandonados e vídeos rascunho órfãos | decided | A | @nestjs/schedule |
+| upload-cleanup-policy/TD-01 | ad-hoc | Backend | Política de limpeza de uploads multipart abandonados e vídeos rascunho órfãos | decided | B (revisado) | @nestjs/schedule |
 
 _Source files:_
 
@@ -118,6 +118,8 @@ _Source files:_
 
 **Recommendation:** divide a responsabilidade pela fronteira natural entre os dois recursos: o storage cuida do que é dele (partes multipart) através de um mecanismo nativo e garantido mesmo com a aplicação fora do ar, enquanto a aplicação cuida apenas do que é exclusivamente seu (o registro `draft` no Postgres, que o storage não enxerga). Isso é mais robusto que a Option B, que depende inteiramente do processo da aplicação estar de pé para proteger o storage contra custo ilimitado.
 **Libraries:** @nestjs/schedule
+**Revisions:**
+- 2026-09-21 — Decisão alterada de Option A para Option B durante SI-03.1 do `/implement`. Rationale: confirmado empiricamente que o MinIO (release `RELEASE.2025-09-07T16-13-09Z`) descarta silenciosamente o campo `AbortIncompleteMultipartUpload` de uma lifecycle rule (aceita apenas quando combinado com `Expiration`, mas não o persiste). O cron único (Option B) cobre o mesmo risco via `ListMultipartUploadsCommand` + `AbortMultipartUploadCommand`, no mesmo `UploadCleanupService` que já limpa os `draft` órfãos.
 
 ## Inherited Decisions Detail
 

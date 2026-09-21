@@ -55,7 +55,7 @@ AWS SDK v3, modular client. Fully compatible with MinIO via `endpoint` + `forceP
 - Client setup: `new S3Client({ endpoint: 'http://minio:9000', forcePathStyle: true, region: 'us-east-1', credentials: {...} })`.
 - Presigned multipart upload (`TD-02`): `CreateMultipartUploadCommand` → per-part `UploadPartCommand` (signed via `@aws-sdk/s3-request-presigner`) → client uploads each part directly → `CompleteMultipartUploadCommand` with the collected `{ ETag, PartNumber }[]`.
 - Presigned read (`TD-05`): `GetObjectCommand` (signed via `@aws-sdk/s3-request-presigner`), optionally with `ResponseContentDisposition: 'attachment'` for downloads — MinIO/S3 natively serves `Range`/206 for the resulting presigned URL, no app-side range handling needed.
-- Cleanup (`upload-cleanup-policy/TD-01`): `PutBucketLifecycleConfigurationCommand` with `Rules: [{ ID, Status: 'Enabled', Filter: {}, AbortIncompleteMultipartUpload: { DaysAfterInitiation: N } }]` — configured once at bootstrap/infra setup, no runtime code needed afterward.
+- Cleanup (`upload-cleanup-policy/TD-01`, revisado para Option B — MinIO não implementa a lifecycle action `AbortIncompleteMultipartUpload`): `ListMultipartUploadsCommand({ Bucket })` to enumerate in-progress multipart uploads, then `AbortMultipartUploadCommand({ Bucket, Key, UploadId })` for each upload older than the configured TTL (`Initiated` field) — run from `UploadCleanupService`'s cron (`@nestjs/schedule`), not at bootstrap.
 - Bucket/key convention (`TD-07`): single bucket, keys `videos/{videoId}/original.<ext>` and `videos/{videoId}/thumbnail.jpg`.
 
 **Used by:** `phase-03-videos/TD-02`, `TD-05`, `TD-07`, `upload-cleanup-policy/TD-01`.
@@ -81,6 +81,6 @@ Node wrapper around the `ffmpeg`/`ffprobe` CLI binaries (must be installed in th
 `npm i --save @nestjs/schedule` — declarative cron jobs for the API/worker process.
 
 - Module: `ScheduleModule.forRoot()` in the relevant module's imports.
-- Cron job (`upload-cleanup-policy/TD-01`): `@Cron(CronExpression.EVERY_DAY_AT_1AM) async cleanupOrphanDrafts() { /* mark draft videos with no activity past TTL as error */ }`. The storage-side cleanup (abandoned multipart parts) is handled entirely by the S3/MinIO lifecycle rule above — this cron only touches the Postgres `videos` table.
+- Cron job (`upload-cleanup-policy/TD-01`, revisado para Option B): `@Cron(CronExpression.EVERY_DAY_AT_1AM) async cleanupOrphanDrafts() { /* mark draft videos with no activity past TTL as error */ }` plus a sibling `cleanupAbandonedMultipartUploads()` in the same service — both run from the same `UploadCleanupService`, covering Postgres `videos` (draft TTL) and storage (`ListMultipartUploadsCommand`/`AbortMultipartUploadCommand`, see `@aws-sdk/client-s3` above) in one mechanism, since MinIO does not support the `AbortIncompleteMultipartUpload` lifecycle action natively.
 
 **Used by:** `upload-cleanup-policy/TD-01`.

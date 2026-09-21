@@ -42,8 +42,11 @@ _Subprojects in scope:_
 
 **Recommendation:** Option A (lifecycle rule nativa do storage + cron de banco para os drafts) — divide a responsabilidade pela fronteira natural entre os dois recursos: o storage cuida do que é dele (partes multipart) através de um mecanismo nativo e garantido mesmo com a aplicação fora do ar, enquanto a aplicação cuida apenas do que é exclusivamente seu (o registro `draft` no Postgres, que o storage não enxerga). Isso é mais robusto que a Option B, que depende inteiramente do processo da aplicação estar de pé para proteger o storage contra custo ilimitado.
 
-**Decision:** A (lifecycle rule nativa do storage + cron de banco para os drafts)
+**Decision:** B (limpeza inteiramente via aplicação — cron único cobrindo storage + banco)
 **Libraries:** @nestjs/schedule
+
+**Revisions:**
+- 2026-09-21 — Decisão alterada de Option A para Option B durante SI-03.1 do `/implement`. Rationale: testado empiricamente (via `@aws-sdk/client-s3` e via `mc ilm import` direto contra o MinIO do Compose, release `RELEASE.2025-09-07T16-13-09Z`) que o MinIO **não implementa** a ação de lifecycle `AbortIncompleteMultipartUpload` — a configuração é aceita sem erro quando combinada com uma `Expiration`, mas o campo `AbortIncompleteMultipartUpload` é silenciosamente descartado (confirmado via `mc ilm export`, que devolve a regra sem esse campo); sozinho (sem `Expiration`), o MinIO rejeita a config inteira com `InvalidArgument`. A premissa da Option A (storage cuida do storage de forma nativa) não é sustentável nesta infraestrutura. Option B cobre o mesmo risco (custo de storage sem limite) via `ListMultipartUploadsCommand` + `AbortMultipartUploadCommand` no mesmo cron que já limpa os `draft` órfãos — mesmo mecanismo, uma responsabilidade a mais.
 
 ---
 
@@ -51,4 +54,4 @@ _Subprojects in scope:_
 
 | ID | Scope | Decision | Recommendation | Choice |
 |----|-------|----------|---------------|--------|
-| TD-01 | Backend | Política de limpeza de uploads/drafts abandonados | Option A (lifecycle rule do storage + cron de banco) | **A** |
+| TD-01 | Backend | Política de limpeza de uploads/drafts abandonados | Option A (lifecycle rule do storage + cron de banco) | **B** _(revisado — MinIO não suporta AbortIncompleteMultipartUpload)_ |

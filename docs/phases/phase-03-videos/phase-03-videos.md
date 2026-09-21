@@ -29,7 +29,7 @@ Implementar o upload de vídeos de até 10GB sem travar a API (multipart direto 
 2. Criar `src/config/storage.config.ts` (`registerAs('storage', ...)` — `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `STORAGE_REGION`) e `src/config/queue.config.ts` (`registerAs('queue', ...)` — `REDIS_HOST`, `REDIS_PORT`); atualizar `src/config/env.validation.ts` e `.env.example` com as novas variáveis (padrão `registerAs` per Inherited Conventions, phase 01)
 3. Adicionar os serviços `redis`, `minio` e `nestjs-worker` (mesma imagem da API, comando de start diferente) ao `nestjs-project/compose.yaml`, com healthchecks (per `phase-03-videos/TD-03`)
 4. Atualizar `Dockerfile.dev` para instalar o binário `ffmpeg` via `apt install ffmpeg` (necessário para `fluent-ffmpeg`, per `phase-03-videos/TD-04`)
-5. Configurar a lifecycle rule do bucket MinIO (`AbortIncompleteMultipartUpload`) via script de bootstrap de infraestrutura (per `upload-cleanup-policy/TD-01`)
+5. Criar script de bootstrap `src/storage/configure-storage.ts` que garante a existência do bucket no MinIO (via `HeadBucketCommand`/`CreateBucketCommand`) (per `phase-03-videos/TD-07`)
 
 **Tests:** _(empty — Infra)_
 
@@ -40,7 +40,7 @@ Implementar o upload de vídeos de até 10GB sem travar a API (multipart direto 
 - `docker compose up -d` traz `redis`, `minio` e `nestjs-worker` com status healthy, além dos serviços já existentes
 - Subir a aplicação sem `STORAGE_BUCKET` definido causa erro de validação Joi no bootstrap — a aplicação não inicia
 - O binário `ffmpeg` está disponível dentro do container do worker (`ffmpeg -version` executa sem erro)
-- A lifecycle rule do bucket está configurada — `AbortIncompleteMultipartUpload` com `DaysAfterInitiation` definido é visível via `GetBucketLifecycleConfiguration`
+- O bucket configurado em `STORAGE_BUCKET` existe no MinIO após rodar o script de bootstrap
 
 ---
 
@@ -198,19 +198,21 @@ Implementar o upload de vídeos de até 10GB sem travar a API (multipart direto 
 
 ### SI-03.7 — Limpeza de uploads e rascunhos abandonados
 
-**Description:** Job agendado que expira vídeos `draft` sem atividade além do TTL; a limpeza das partes multipart órfãs no storage fica a cargo da lifecycle rule configurada em SI-03.1.
+**Description:** Job agendado único que expira vídeos `draft` sem atividade além do TTL **e** aborta uploads multipart incompletos no storage além do TTL — o MinIO não suporta a lifecycle rule `AbortIncompleteMultipartUpload` nativamente (confirmado empiricamente; ver `**Revisions:**` de `upload-cleanup-policy/TD-01`), então a limpeza do storage também é responsabilidade deste cron (per `upload-cleanup-policy/TD-01`, revisado para Option B).
 
 **Technical actions:**
 
 1. Criar `src/videos/upload-cleanup.service.ts` — `@Cron(CronExpression.EVERY_DAY_AT_1AM) async cleanupOrphanDrafts()`: busca `Video` com `status=draft` e `updated_at` além do TTL configurado, marca como `error` com `error_message` explicando o timeout (per `upload-cleanup-policy/TD-01`)
-2. Importar `ScheduleModule.forRoot()` no `VideosModule`
-3. Registrar `UploadCleanupService` como provider do `VideosModule`
+2. Adicionar `cleanupAbandonedMultipartUploads()` ao mesmo service: lista uploads multipart incompletos via `ListMultipartUploadsCommand`, aborta os iniciados há mais de `MULTIPART_LIFECYCLE_DAYS` dias via `AbortMultipartUploadCommand` (per `upload-cleanup-policy/TD-01`)
+3. Importar `ScheduleModule.forRoot()` no `VideosModule`
+4. Registrar `UploadCleanupService` como provider do `VideosModule`
 
 **Tests:**
 
 | Artifact | Layer | Test file |
 |----------|-------|-----------|
 | `UploadCleanupService.cleanupOrphanDrafts` | Integration: DB real — drafts antigos viram `error`; drafts recentes e vídeos em outros estados não são tocados | `src/videos/upload-cleanup.service.integration-spec.ts` |
+| `UploadCleanupService.cleanupAbandonedMultipartUploads` | Integration: MinIO real — multipart uploads antigos são abortados; recentes não são tocados | `src/videos/upload-cleanup.service.integration-spec.ts` |
 
 **Dependencies:** SI-03.1, SI-03.2
 
@@ -219,6 +221,8 @@ Implementar o upload de vídeos de até 10GB sem travar a API (multipart direto 
 - Um `Video` em `draft` com `updated_at` além do TTL é marcado como `error` com `error_message` explicando a expiração
 - Um `Video` em `draft` recente (dentro do TTL) não é alterado pelo cron
 - Um `Video` já em `ready`/`processing`/`error` não é alterado pelo cron
+- Um upload multipart iniciado no storage há mais de `MULTIPART_LIFECYCLE_DAYS` dias é abortado (`ListMultipartUploads` não o lista mais depois)
+- Um upload multipart recente (dentro do TTL) não é abortado pelo cron
 
 ---
 
