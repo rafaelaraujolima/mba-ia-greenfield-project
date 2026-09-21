@@ -1,5 +1,9 @@
 import 'dotenv/config';
-import { CreateBucketCommand, HeadBucketCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  CreateBucketCommand,
+  HeadBucketCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import storageConfig from '../config/storage.config';
 
 async function configureStorage(): Promise<void> {
