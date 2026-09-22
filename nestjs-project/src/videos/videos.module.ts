@@ -3,6 +3,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ChannelsModule } from '../channels/channels.module';
 import { StorageModule } from '../storage/storage.module';
+import { UploadCleanupService } from './upload-cleanup.service';
 import { Video } from './entities/video.entity';
 import { VideoProcessor } from './video.processor';
 import { VideosController } from './videos.controller';
@@ -17,7 +18,7 @@ import { VIDEO_PROCESSING_QUEUE } from './videos.constants';
     BullModule.registerQueue({ name: VIDEO_PROCESSING_QUEUE }),
   ],
   controllers: [VideosController],
-  providers: [VideosService, VideoProcessor],
+  providers: [VideosService, VideoProcessor, UploadCleanupService],
   exports: [TypeOrmModule, VideosService],
 })
 export class VideosModule {}

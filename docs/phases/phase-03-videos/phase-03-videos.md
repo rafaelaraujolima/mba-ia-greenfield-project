@@ -433,17 +433,17 @@ SI-03.2 (root — entidade Video + migration)
 
 ## Deliverables
 
-- [ ] SI-03.1 — Dependências, configuração e infraestrutura Docker
-- [ ] SI-03.2 — Entidade Video + migration
-- [ ] SI-03.3 — Iniciar upload e solicitar URLs de parte
-- [ ] SI-03.4 — Completar upload e enfileirar processamento
-- [ ] SI-03.5 — Worker de processamento de vídeo
-- [ ] SI-03.6 — Consulta, streaming e download do vídeo
-- [ ] SI-03.7 — Limpeza de uploads e rascunhos abandonados
+- [x] SI-03.1 — Dependências, configuração e infraestrutura Docker
+- [x] SI-03.2 — Entidade Video + migration
+- [x] SI-03.3 — Iniciar upload e solicitar URLs de parte
+- [x] SI-03.4 — Completar upload e enfileirar processamento
+- [x] SI-03.5 — Worker de processamento de vídeo
+- [x] SI-03.6 — Consulta, streaming e download do vídeo
+- [x] SI-03.7 — Limpeza de uploads e rascunhos abandonados
 
 **Full test suites:**
 
-- [ ] Testes unitários e de integração passam (`docker compose exec nestjs-api npm test -- --runInBand`)
-- [ ] Testes E2E passam (`docker compose exec nestjs-api npm run test:e2e`)
-- [ ] Type-check passa (`docker compose exec nestjs-api npx tsc --noEmit`)
-- [ ] Lint passa (`docker compose exec nestjs-api npm run lint`)
+- [x] Testes unitários e de integração passam (`docker compose exec nestjs-api npm test -- --runInBand`) — 196/196
+- [x] Testes E2E passam (`docker compose exec nestjs-api npm run test:e2e`) — 71/71
+- [x] Type-check passa (`docker compose exec nestjs-api npx tsc --noEmit`)
+- [x] Lint passa (`docker compose exec nestjs-api npm run lint`)

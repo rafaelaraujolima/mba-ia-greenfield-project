@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
-**Status:** in_progress
-**SIs:** 6/7 completed
+**Status:** complete
+**SIs:** 7/7 completed
 
 ### SI-03.1 — Dependências, configuração e infraestrutura Docker
 - **Status:** complete
@@ -34,6 +34,10 @@
 - **Observations:** Added `VideosService.findOne` (visible if `ready`, or if the requester owns the channel — otherwise `VideoNotFoundException`, never `VideoNotOwnedException`, so non-ready videos are indistinguishable from missing ones to outsiders) and `getPlaybackUrl` (presigned `GetObjectCommand`, `ResponseContentDisposition: attachment` for downloads, per TD-05). Added `GET /videos/:id`, `GET /videos/:id/stream`, `GET /videos/:id/download` — the latter two via `@Redirect()` returning `{url, statusCode: 302}`, so the API never proxies video bytes. Hit a real gap in shared auth infrastructure: `JwtAuthGuard` short-circuited entirely on `@Public()` routes, never parsing a supplied token — but `GET /videos/:id` needs to know the requester's identity *if authenticated* to decide whether to show a non-ready video to its owner, while still allowing fully anonymous access. Fixed `JwtAuthGuard` itself (not a per-route workaround) to optionally parse and attach `request.user` on public routes when a valid Bearer token is present, silently treating a missing/invalid token as anonymous rather than throwing — protected-route behavior is completely unchanged. This is shared code touched beyond the `videos` module, but was necessary to satisfy this SI's own acceptance criteria (owner sees drafts on a public endpoint) rather than optional scope creep. `npx tsc --noEmit` clean; full suite 191/191 (unit+integration) + 71/71 (e2e) green; lint exits 0 with only pre-existing debt.
 
 ### SI-03.7 — Limpeza de uploads e rascunhos abandonados
-- **Status:** pending
-- **Tests:** —
-- **Observations:** none
+- **Status:** complete
+- **Tests:** `src/videos/upload-cleanup.service.integration-spec.ts` (5 tests — real Postgres for `cleanupOrphanDrafts`, real MinIO `ListMultipartUploadsCommand`/`AbortMultipartUploadCommand` for `cleanupAbandonedMultipartUploads`) — all passing
+- **Observations:** Added `UploadCleanupService` with both cron methods on `VideosModule`, per the app-managed cleanup approach decided in SI-03.1's revision of `upload-cleanup-policy/TD-01` (MinIO doesn't support the `AbortIncompleteMultipartUpload` lifecycle rule). Deliberately did **not** re-add `ScheduleModule.forRoot()` to `VideosModule` as the plan's technical action #3 literally says — `AppModule` already imports it globally (`global: true` in `@nestjs/schedule`'s own module definition, added in SI-03.1). Calling `.forRoot()` a second time from a different module creates a second, independent `ScheduleExplorer`/`SchedulerRegistry` pair, which would double-register every `@Cron` job in the app and run each one twice on schedule — confirmed by reading `@nestjs/schedule`'s source before deciding. This tests as `UploadCleanupService` compiling and its cron methods firing correctly via direct invocation (not through the actual cron schedule), which the plan's test row asks for regardless. For `cleanupAbandonedMultipartUploads`'s "old vs. recent" distinction, MinIO sets the real `Initiated` timestamp server-side at multipart-create time (not something a test can fake), so the "old" case constructs a second `UploadCleanupService` instance directly with `multipartLifecycleDays: 0` against the same real upload — same production code path, just a TTL short enough that a just-created upload is already past cutoff. `npx tsc --noEmit` clean; full suite 196/196 (unit+integration) + 71/71 (e2e) green; lint exits 0 with only pre-existing debt.
+
+## Phase complete
+
+All 7 SIs done; Deliverables checklist in `phase-03-videos.md` fully checked. Final full-suite verification: `tsc --noEmit` clean, unit+integration 196/196, e2e 71/71, lint exits 0 (pre-existing debt only, all in files never touched by this phase: `mail.service.integration-spec.ts`'s `any`-typed mock assertions, `create-test-data-source.ts`'s `Function` type, `users.service.integration-spec.ts`'s unused import, and the same `any`-typed `res.body` pattern across all e2e specs going back to `auth.e2e-spec.ts`, which predates this phase).
