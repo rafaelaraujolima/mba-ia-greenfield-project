@@ -6,10 +6,11 @@ import {
   createTestDataSource,
 } from '../test/create-test-data-source';
 import { User } from '../users/entities/user.entity';
+import { Video } from '../videos/entities/video.entity';
 import { ChannelsService } from './channels.service';
 import { Channel } from './entities/channel.entity';
 
-const ALL_ENTITIES = [User, Channel, RefreshToken, VerificationToken];
+const ALL_ENTITIES = [User, Channel, RefreshToken, VerificationToken, Video];
 
 describe('ChannelsService (integration)', () => {
   let dataSource: DataSource;
@@ -22,7 +23,7 @@ describe('ChannelsService (integration)', () => {
     await dataSource.initialize();
     userRepository = dataSource.getRepository(User);
     channelRepository = dataSource.getRepository(Channel);
-    channelsService = new ChannelsService(dataSource);
+    channelsService = new ChannelsService(dataSource, channelRepository);
   });
 
   afterAll(async () => {
@@ -42,6 +43,29 @@ describe('ChannelsService (integration)', () => {
       }),
     );
   }
+
+  describe('findById', () => {
+    it('returns the channel when it exists', async () => {
+      const user = await createUser();
+      const channel = await channelsService.createChannel(
+        user.id,
+        'findme@example.com',
+      );
+
+      const found = await channelsService.findById(channel.id);
+
+      expect(found).not.toBeNull();
+      expect(found!.id).toBe(channel.id);
+    });
+
+    it('returns null when the channel does not exist', async () => {
+      const found = await channelsService.findById(
+        '00000000-0000-0000-0000-000000000000',
+      );
+
+      expect(found).toBeNull();
+    });
+  });
 
   describe('createChannel', () => {
     it('persists a channel derived from email', async () => {

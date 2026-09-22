@@ -22,12 +22,25 @@ export class JwtAuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
 
     const request = context
       .switchToHttp()
       .getRequest<{ headers: Record<string, string>; user: unknown }>();
     const authHeader = request.headers?.authorization;
+
+    if (isPublic) {
+      if (authHeader?.startsWith(BEARER_PREFIX)) {
+        try {
+          request.user = await this.jwtService.verifyAsync<JwtPayload>(
+            authHeader.slice(BEARER_PREFIX.length),
+          );
+        } catch {
+          // Invalid/expired token on a public route is treated as anonymous,
+          // not an error — the route decides what anonymous access sees.
+        }
+      }
+      return true;
+    }
 
     if (!authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
       throw new UnauthorizedException();

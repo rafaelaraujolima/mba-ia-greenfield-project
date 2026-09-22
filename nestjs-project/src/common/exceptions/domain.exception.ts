@@ -48,3 +48,45 @@ export class TokenReuseDetectedException extends DomainException {
     );
   }
 }
+
+export class ChannelNotFoundException extends DomainException {
+  constructor() {
+    super('CHANNEL_NOT_FOUND', 404, 'Channel not found');
+  }
+}
+
+export class ChannelNotOwnedException extends DomainException {
+  constructor() {
+    super('CHANNEL_NOT_OWNED', 403, 'Channel does not belong to requester');
+  }
+}
+
+export class VideoNotFoundException extends DomainException {
+  constructor() {
+    super('VIDEO_NOT_FOUND', 404, 'Video not found');
+  }
+}
+
+export class VideoNotOwnedException extends DomainException {
+  constructor() {
+    super('VIDEO_NOT_OWNED', 403, 'Video does not belong to requester');
+  }
+}
+
+export class InvalidVideoStateException extends DomainException {
+  constructor(message = 'Video is not in a valid state for this operation') {
+    super('INVALID_VIDEO_STATE', 409, message);
+  }
+}
+
+export class FileSizeExceededException extends DomainException {
+  constructor() {
+    super('FILE_SIZE_EXCEEDED', 400, 'File size exceeds the 10GB limit');
+  }
+}
+
+export class InvalidMultipartCompletionException extends DomainException {
+  constructor(message = 'Multipart upload parts are empty or incomplete') {
+    super('INVALID_MULTIPART_COMPLETION', 400, message);
+  }
+}
