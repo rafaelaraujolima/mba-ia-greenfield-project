@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { UploadPartCommand, type S3Client } from '@aws-sdk/client-s3';
 import type { Queue } from 'bullmq';
+import { Category } from '../categories/entities/category.entity';
 import { Channel } from '../channels/entities/channel.entity';
 import storageConfig from '../config/storage.config';
 import {
@@ -21,12 +22,12 @@ import {
 } from '../test/create-test-data-source';
 import { S3_CLIENT } from '../storage/storage.constants';
 import { User } from '../users/entities/user.entity';
-import { Video, VideoStatus } from './entities/video.entity';
+import { Video, VideoStatus, VideoVisibility } from './entities/video.entity';
 import { VideosModule } from './videos.module';
 import { VideosService } from './videos.service';
 import { VIDEO_PROCESSING_QUEUE, VIDEO_PROCESS_JOB } from './videos.constants';
 
-const ALL_ENTITIES = [User, Channel, Video];
+const ALL_ENTITIES = [User, Channel, Category, Video];
 
 async function createVideosTestModule(): Promise<TestingModule> {
   const ds = createTestDataSource(ALL_ENTITIES);
@@ -315,6 +316,137 @@ describe('VideosService (integration)', () => {
           'inline',
         ),
       ).rejects.toThrow(VideoNotFoundException);
+    });
+  });
+
+  describe('findPublicByChannel', () => {
+    async function createVideoWith(
+      channelId: string,
+      overrides: Partial<Video>,
+    ) {
+      return videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'Video',
+          storage_key: `videos/${channelId}/x.mp4`,
+          ...overrides,
+        }),
+      );
+    }
+
+    it('throws ChannelNotFoundException for an unknown nickname', async () => {
+      await expect(
+        videosService.findPublicByChannel('unknown-nick', {}),
+      ).rejects.toThrow(ChannelNotFoundException);
+    });
+
+    it('returns only ready, public and published videos', async () => {
+      const { channel } = await createUserAndChannel();
+      const visible = await createVideoWith(channel.id, {
+        title: 'Visible',
+        status: VideoStatus.READY,
+        visibility: VideoVisibility.PUBLIC,
+        published_at: new Date(),
+      });
+      await createVideoWith(channel.id, {
+        title: 'Unpublished',
+        status: VideoStatus.READY,
+        published_at: null,
+      });
+      await createVideoWith(channel.id, {
+        title: 'Unlisted',
+        status: VideoStatus.READY,
+        visibility: VideoVisibility.UNLISTED,
+        published_at: new Date(),
+      });
+      await createVideoWith(channel.id, {
+        title: 'Processing',
+        status: VideoStatus.PROCESSING,
+        published_at: new Date(),
+      });
+
+      const result = await videosService.findPublicByChannel(
+        channel.nickname,
+        {},
+      );
+
+      expect(result.total).toBe(1);
+      expect(result.items.map((v) => v.id)).toEqual([visible.id]);
+    });
+
+    it('does not return public videos of other channels', async () => {
+      const { channel } = await createUserAndChannel();
+      const other = await createUserAndChannel();
+      await createVideoWith(other.channel.id, {
+        status: VideoStatus.READY,
+        published_at: new Date(),
+      });
+
+      const result = await videosService.findPublicByChannel(
+        channel.nickname,
+        {},
+      );
+
+      expect(result.items).toEqual([]);
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('findByChannel', () => {
+    async function createVideos(channelId: string, count: number) {
+      for (let i = 1; i <= count; i++) {
+        await videoRepository.save(
+          videoRepository.create({
+            channel_id: channelId,
+            title: `Video ${i}`,
+            storage_key: `videos/${channelId}/${i}.mp4`,
+          }),
+        );
+      }
+    }
+
+    it('returns only the videos of the requested channel, with the total count', async () => {
+      const { user, channel } = await createUserAndChannel();
+      const other = await createUserAndChannel();
+      await createVideos(channel.id, 3);
+      await createVideos(other.channel.id, 2);
+
+      const result = await videosService.findByChannel(channel.id, user.id, {});
+
+      expect(result.total).toBe(3);
+      expect(result.items).toHaveLength(3);
+      expect(result.items.every((v) => v.channel_id === channel.id)).toBe(true);
+    });
+
+    it('paginates the results using page and pageSize', async () => {
+      const { user, channel } = await createUserAndChannel();
+      await createVideos(channel.id, 5);
+
+      const page1 = await videosService.findByChannel(channel.id, user.id, {
+        page: 1,
+        pageSize: 2,
+      });
+      const page3 = await videosService.findByChannel(channel.id, user.id, {
+        page: 3,
+        pageSize: 2,
+      });
+
+      expect(page1.items).toHaveLength(2);
+      expect(page1.total).toBe(5);
+      expect(page3.items).toHaveLength(1);
+    });
+
+    it('returns an empty items array when page is beyond the total', async () => {
+      const { user, channel } = await createUserAndChannel();
+      await createVideos(channel.id, 2);
+
+      const result = await videosService.findByChannel(channel.id, user.id, {
+        page: 5,
+        pageSize: 10,
+      });
+
+      expect(result.items).toEqual([]);
+      expect(result.total).toBe(2);
     });
   });
 });

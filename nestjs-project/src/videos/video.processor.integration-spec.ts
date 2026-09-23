@@ -1,3 +1,4 @@
+import { Category } from '../categories/entities/category.entity';
 import { execFile } from 'node:child_process';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -28,7 +29,7 @@ import { VideosModule } from './videos.module';
 import { VIDEO_PROCESSING_QUEUE, VIDEO_PROCESS_JOB } from './videos.constants';
 
 const execFileAsync = promisify(execFile);
-const ALL_ENTITIES = [User, Channel, Video];
+const ALL_ENTITIES = [User, Channel, Category, Video];
 
 async function createTestModule(): Promise<TestingModule> {
   const ds = createTestDataSource(ALL_ENTITIES);

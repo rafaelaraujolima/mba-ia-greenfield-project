@@ -1,3 +1,4 @@
+import { Category } from '../categories/entities/category.entity';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -20,7 +21,7 @@ import { UploadCleanupService } from './upload-cleanup.service';
 import { Video, VideoStatus } from './entities/video.entity';
 import { VideosModule } from './videos.module';
 
-const ALL_ENTITIES = [User, Channel, Video];
+const ALL_ENTITIES = [User, Channel, Category, Video];
 const BUCKET = 'streamtube';
 
 async function createTestModule(): Promise<TestingModule> {

@@ -1,7 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, QueryFailedError, Repository } from 'typeorm';
+import {
+  ChannelNotFoundException,
+  ChannelNotOwnedException,
+  NicknameAlreadyExistsException,
+} from '../common/exceptions/domain.exception';
 import { appendRandomSuffix, sanitizeNickname } from './nickname.util';
+import { UpdateChannelDto } from './dto/update-channel.dto';
 import { Channel } from './entities/channel.entity';
 
 const PG_UNIQUE_VIOLATION = '23505';
@@ -28,6 +34,37 @@ export class ChannelsService {
 
   async findById(id: string): Promise<Channel | null> {
     return this.channelRepository.findOneBy({ id });
+  }
+
+  async findByNickname(nickname: string): Promise<Channel | null> {
+    return this.channelRepository.findOneBy({ nickname });
+  }
+
+  async updateChannel(
+    channelId: string,
+    userId: string,
+    dto: UpdateChannelDto,
+  ): Promise<Channel> {
+    const channel = await this.findById(channelId);
+    if (!channel) throw new ChannelNotFoundException();
+    if (channel.user_id !== userId) throw new ChannelNotOwnedException();
+
+    if (dto.nickname !== undefined && dto.nickname !== channel.nickname) {
+      const existing = await this.findByNickname(dto.nickname);
+      if (existing) throw new NicknameAlreadyExistsException();
+      channel.nickname = dto.nickname;
+    }
+    if (dto.name !== undefined) channel.name = dto.name;
+    if (dto.description !== undefined) channel.description = dto.description;
+
+    try {
+      return await this.channelRepository.save(channel);
+    } catch (err) {
+      if (isPgUniqueViolationOnColumn(err, NICKNAME_COLUMN)) {
+        throw new NicknameAlreadyExistsException();
+      }
+      throw err;
+    }
   }
 
   async createChannel(userId: string, email: string): Promise<Channel> {
