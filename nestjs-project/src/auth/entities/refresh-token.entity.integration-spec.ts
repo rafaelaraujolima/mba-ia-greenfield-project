@@ -1,3 +1,4 @@
+import { Category } from '../../categories/entities/category.entity';
 import { DataSource, Repository } from 'typeorm';
 import { Channel } from '../../channels/entities/channel.entity';
 import { User } from '../../users/entities/user.entity';
@@ -9,7 +10,14 @@ import { Video } from '../../videos/entities/video.entity';
 import { RefreshToken } from './refresh-token.entity';
 import { VerificationToken } from './verification-token.entity';
 
-const ALL_ENTITIES = [User, Channel, RefreshToken, VerificationToken, Video];
+const ALL_ENTITIES = [
+  User,
+  Channel,
+  RefreshToken,
+  VerificationToken,
+  Category,
+  Video,
+];
 
 describe('RefreshToken entity (integration)', () => {
   let dataSource: DataSource;

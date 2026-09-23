@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { CategoriesModule } from '../categories/categories.module';
 import { ChannelsModule } from '../channels/channels.module';
 import { StorageModule } from '../storage/storage.module';
 import { UploadCleanupService } from './upload-cleanup.service';
@@ -13,6 +14,7 @@ import { VIDEO_PROCESSING_QUEUE } from './videos.constants';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Video]),
+    CategoriesModule,
     ChannelsModule,
     StorageModule,
     BullModule.registerQueue({ name: VIDEO_PROCESSING_QUEUE }),

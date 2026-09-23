@@ -1,13 +1,14 @@
 import { DataSource, Repository } from 'typeorm';
+import { Category } from '../../categories/entities/category.entity';
 import { Channel } from '../../channels/entities/channel.entity';
 import { User } from '../../users/entities/user.entity';
 import {
   cleanAllTables,
   createTestDataSource,
 } from '../../test/create-test-data-source';
-import { Video, VideoStatus } from './video.entity';
+import { Video, VideoStatus, VideoVisibility } from './video.entity';
 
-const ALL_ENTITIES = [User, Channel, Video];
+const ALL_ENTITIES = [User, Channel, Category, Video];
 
 describe('Video entity (integration)', () => {
   let dataSource: DataSource;
@@ -122,5 +123,55 @@ describe('Video entity (integration)', () => {
     });
 
     expect(found?.channel.id).toBe(channel.id);
+  });
+
+  it('should persist category_id as null when no category is provided', async () => {
+    const channel = await createChannel();
+    const video = await videoRepository.save(
+      videoRepository.create(buildVideo(channel.id)),
+    );
+
+    expect(video.category_id).toBeNull();
+  });
+
+  it('should default visibility to public', async () => {
+    const channel = await createChannel();
+    const video = await videoRepository.save(
+      videoRepository.create(buildVideo(channel.id)),
+    );
+
+    expect(video.visibility).toBe(VideoVisibility.PUBLIC);
+  });
+
+  it('should persist published_at as null by default', async () => {
+    const channel = await createChannel();
+    const video = await videoRepository.save(
+      videoRepository.create(buildVideo(channel.id)),
+    );
+
+    expect(video.published_at).toBeNull();
+  });
+
+  it('should load the related category via ManyToOne relation', async () => {
+    const channel = await createChannel();
+    const categoryRepository = dataSource.getRepository(Category);
+    const category = await categoryRepository.save(
+      categoryRepository.create({ name: 'Education' }),
+    );
+    await videoRepository.save(
+      videoRepository.create(
+        buildVideo(channel.id, {
+          title: 'Cat video',
+          category_id: category.id,
+        }),
+      ),
+    );
+
+    const found = await videoRepository.findOne({
+      where: { title: 'Cat video' },
+      relations: ['category'],
+    });
+
+    expect(found?.category?.id).toBe(category.id);
   });
 });

@@ -1,3 +1,4 @@
+import { Category } from '../categories/entities/category.entity';
 import { Test } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RefreshToken } from '../auth/entities/refresh-token.entity';
@@ -8,7 +9,14 @@ import { Video } from '../videos/entities/video.entity';
 import { Channel } from './entities/channel.entity';
 import { ChannelsModule } from './channels.module';
 
-const ALL_ENTITIES = [User, Channel, RefreshToken, VerificationToken, Video];
+const ALL_ENTITIES = [
+  User,
+  Channel,
+  RefreshToken,
+  VerificationToken,
+  Category,
+  Video,
+];
 
 describe('ChannelsModule', () => {
   it('should compile with TypeOrmModule.forFeature([Channel]) and ChannelsService', async () => {

@@ -3,35 +3,45 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { ConfigType } from '@nestjs/config';
-import { Repository } from 'typeorm';
+import { IsNull, Not, Repository } from 'typeorm';
 import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
   GetObjectCommand,
+  PutObjectCommand,
   S3ServiceException,
   UploadPartCommand,
   type S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Queue } from 'bullmq';
+import { CategoriesService } from '../categories/categories.service';
 import { ChannelsService } from '../channels/channels.service';
 import storageConfig from '../config/storage.config';
 import { S3_CLIENT } from '../storage/storage.constants';
 import {
+  CategoryNotFoundException,
   ChannelNotFoundException,
   ChannelNotOwnedException,
   FileSizeExceededException,
+  InvalidFileTypeException,
   InvalidMultipartCompletionException,
   InvalidVideoStateException,
+  ThumbnailSizeExceededException,
   VideoNotFoundException,
   VideoNotOwnedException,
 } from '../common/exceptions/domain.exception';
 import { CompleteUploadDto } from './dto/complete-upload.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
+import { ListChannelVideosDto } from './dto/list-channel-videos.dto';
 import { RequestUploadPartsDto } from './dto/request-upload-parts.dto';
-import { Video, VideoStatus } from './entities/video.entity';
+import { UpdateVideoDto } from './dto/update-video.dto';
+import { Video, VideoStatus, VideoVisibility } from './entities/video.entity';
 import type { VideoProcessJobData } from './video-process.types';
 import {
+  DEFAULT_PAGE,
+  DEFAULT_PAGE_SIZE,
+  MAX_THUMBNAIL_FILE_SIZE_BYTES,
   MAX_VIDEO_FILE_SIZE_BYTES,
   VIDEO_PROCESSING_QUEUE,
   VIDEO_PROCESS_JOB,
@@ -49,12 +59,20 @@ export interface UploadPartUrl {
   url: string;
 }
 
+export interface PaginatedVideos {
+  items: Video[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
 @Injectable()
 export class VideosService {
   constructor(
     @InjectRepository(Video)
     private readonly videoRepository: Repository<Video>,
     private readonly channelsService: ChannelsService,
+    private readonly categoriesService: CategoriesService,
     @Inject(S3_CLIENT) private readonly s3Client: S3Client,
     @Inject(storageConfig.KEY)
     private readonly storage: ConfigType<typeof storageConfig>,
@@ -189,6 +207,104 @@ export class VideosService {
     }
 
     return video;
+  }
+
+  async update(
+    videoId: string,
+    userId: string,
+    dto: UpdateVideoDto,
+  ): Promise<Video> {
+    const video = await this.findOwnedVideoOrFail(videoId, userId);
+
+    if (dto.categoryId !== undefined) {
+      const category = await this.categoriesService.findById(dto.categoryId);
+      if (!category) throw new CategoryNotFoundException();
+      video.category_id = dto.categoryId;
+    }
+    if (dto.title !== undefined) video.title = dto.title;
+    if (dto.description !== undefined) video.description = dto.description;
+    if (dto.visibility !== undefined) video.visibility = dto.visibility;
+
+    return this.videoRepository.save(video);
+  }
+
+  async updateThumbnail(
+    videoId: string,
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<Video> {
+    if (!file.mimetype.startsWith('image/')) {
+      throw new InvalidFileTypeException();
+    }
+    if (file.size > MAX_THUMBNAIL_FILE_SIZE_BYTES) {
+      throw new ThumbnailSizeExceededException();
+    }
+
+    const video = await this.findOwnedVideoOrFail(videoId, userId);
+    const thumbnailKey = `videos/${video.id}/thumbnail.jpg`;
+
+    await this.s3Client.send(
+      new PutObjectCommand({
+        Bucket: this.storage.bucket,
+        Key: thumbnailKey,
+        Body: file.buffer,
+        ContentType: file.mimetype,
+      }),
+    );
+
+    video.thumbnail_key = thumbnailKey;
+    return this.videoRepository.save(video);
+  }
+
+  async publish(videoId: string, userId: string): Promise<Video> {
+    const video = await this.findOwnedVideoOrFail(videoId, userId);
+    if (video.status !== VideoStatus.READY || video.published_at !== null) {
+      throw new InvalidVideoStateException();
+    }
+
+    video.published_at = new Date();
+    return this.videoRepository.save(video);
+  }
+
+  async findByChannel(
+    channelId: string,
+    userId: string,
+    { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE }: ListChannelVideosDto,
+  ): Promise<PaginatedVideos> {
+    const channel = await this.channelsService.findById(channelId);
+    if (!channel) throw new ChannelNotFoundException();
+    if (channel.user_id !== userId) throw new ChannelNotOwnedException();
+
+    const [items, total] = await this.videoRepository.findAndCount({
+      where: { channel_id: channelId },
+      order: { created_at: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    return { items, page, pageSize, total };
+  }
+
+  async findPublicByChannel(
+    nickname: string,
+    { page = DEFAULT_PAGE, pageSize = DEFAULT_PAGE_SIZE }: ListChannelVideosDto,
+  ): Promise<PaginatedVideos> {
+    const channel = await this.channelsService.findByNickname(nickname);
+    if (!channel) throw new ChannelNotFoundException();
+
+    const [items, total] = await this.videoRepository.findAndCount({
+      where: {
+        channel_id: channel.id,
+        status: VideoStatus.READY,
+        visibility: VideoVisibility.PUBLIC,
+        published_at: Not(IsNull()),
+      },
+      order: { published_at: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    return { items, page, pageSize, total };
   }
 
   async getPlaybackUrl(

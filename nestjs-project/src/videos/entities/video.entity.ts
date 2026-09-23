@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Category } from '../../categories/entities/category.entity';
 import { Channel } from '../../channels/entities/channel.entity';
 
 export enum VideoStatus {
@@ -17,7 +18,13 @@ export enum VideoStatus {
   ERROR = 'error',
 }
 
+export enum VideoVisibility {
+  PUBLIC = 'public',
+  UNLISTED = 'unlisted',
+}
+
 @Entity('videos')
+@Index(['channel_id', 'visibility', 'published_at'])
 export class Video {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -28,6 +35,23 @@ export class Video {
 
   @Column({ type: 'varchar', length: 255 })
   title: string;
+
+  @Column({ type: 'text', nullable: true })
+  description: string | null;
+
+  @Index()
+  @Column({ type: 'uuid', nullable: true })
+  category_id: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: VideoVisibility,
+    default: VideoVisibility.PUBLIC,
+  })
+  visibility: VideoVisibility;
+
+  @Column({ type: 'timestamptz', nullable: true })
+  published_at: Date | null;
 
   @Index()
   @Column({
@@ -73,4 +97,8 @@ export class Video {
   @ManyToOne(() => Channel, (channel) => channel.videos)
   @JoinColumn({ name: 'channel_id' })
   channel: Channel;
+
+  @ManyToOne(() => Category, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'category_id' })
+  category: Category | null;
 }

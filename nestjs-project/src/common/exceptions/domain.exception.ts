@@ -90,3 +90,31 @@ export class InvalidMultipartCompletionException extends DomainException {
     super('INVALID_MULTIPART_COMPLETION', 400, message);
   }
 }
+
+export class CategoryNotFoundException extends DomainException {
+  constructor() {
+    super('CATEGORY_NOT_FOUND', 404, 'Category not found');
+  }
+}
+
+export class NicknameAlreadyExistsException extends DomainException {
+  constructor() {
+    super('NICKNAME_ALREADY_EXISTS', 409, 'Nickname is already in use');
+  }
+}
+
+export class InvalidFileTypeException extends DomainException {
+  constructor() {
+    super('INVALID_FILE_TYPE', 400, 'Uploaded file is not an image');
+  }
+}
+
+export class ThumbnailSizeExceededException extends DomainException {
+  constructor() {
+    super(
+      'THUMBNAIL_SIZE_EXCEEDED',
+      400,
+      'Thumbnail file exceeds the configured size limit',
+    );
+  }
+}

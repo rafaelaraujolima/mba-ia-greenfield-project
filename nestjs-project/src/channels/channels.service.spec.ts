@@ -1,4 +1,9 @@
 import { QueryFailedError } from 'typeorm';
+import {
+  ChannelNotFoundException,
+  ChannelNotOwnedException,
+  NicknameAlreadyExistsException,
+} from '../common/exceptions/domain.exception';
 import { ChannelsService } from './channels.service';
 import { Channel } from './entities/channel.entity';
 
@@ -181,6 +186,103 @@ describe('ChannelsService', () => {
         service.createChannel('user-id', 'carol@example.com'),
       ).rejects.toThrow('Connection lost');
       expect(manager.save).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('updateChannel', () => {
+    function makeUpdateRepository(overrides: Record<string, jest.Mock> = {}) {
+      return {
+        findOneBy: jest.fn(),
+        save: jest.fn((data) => Promise.resolve(data)),
+        ...overrides,
+      } as any;
+    }
+
+    function makeService(repository: any) {
+      return new ChannelsService(makeDataSource(makeManager()), repository);
+    }
+
+    it('throws ChannelNotFoundException when the channel does not exist', async () => {
+      const repository = makeUpdateRepository({
+        findOneBy: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(
+        makeService(repository).updateChannel('uuid', 'user-id', {}),
+      ).rejects.toThrow(ChannelNotFoundException);
+    });
+
+    it('throws ChannelNotOwnedException when the channel belongs to another user', async () => {
+      const repository = makeUpdateRepository({
+        findOneBy: jest.fn().mockResolvedValue(makeChannel('mine')),
+      });
+
+      await expect(
+        makeService(repository).updateChannel('uuid', 'other-user', {}),
+      ).rejects.toThrow(ChannelNotOwnedException);
+    });
+
+    it('throws NicknameAlreadyExistsException without suffixing when the nickname is taken', async () => {
+      const repository = makeUpdateRepository({
+        findOneBy: jest
+          .fn()
+          .mockResolvedValueOnce(makeChannel('mine'))
+          .mockResolvedValueOnce(makeChannel('taken')),
+      });
+
+      await expect(
+        makeService(repository).updateChannel('uuid', 'user-id', {
+          nickname: 'taken',
+        }),
+      ).rejects.toThrow(NicknameAlreadyExistsException);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('maps a unique violation on nickname (race) to NicknameAlreadyExistsException', async () => {
+      const repository = makeUpdateRepository({
+        findOneBy: jest
+          .fn()
+          .mockResolvedValueOnce(makeChannel('mine'))
+          .mockResolvedValueOnce(null),
+        save: jest.fn().mockRejectedValue(makeUniqueError()),
+      });
+
+      await expect(
+        makeService(repository).updateChannel('uuid', 'user-id', {
+          nickname: 'racy',
+        }),
+      ).rejects.toThrow(NicknameAlreadyExistsException);
+    });
+
+    it('updates only the provided fields', async () => {
+      const repository = makeUpdateRepository({
+        findOneBy: jest
+          .fn()
+          .mockResolvedValueOnce(makeChannel('mine'))
+          .mockResolvedValueOnce(null),
+      });
+
+      const result = await makeService(repository).updateChannel(
+        'uuid',
+        'user-id',
+        { nickname: 'fresh', description: 'New description' },
+      );
+
+      expect(result.nickname).toBe('fresh');
+      expect(result.description).toBe('New description');
+      expect(result.name).toBe('mine');
+    });
+
+    it('does not check for collision when the nickname is unchanged', async () => {
+      const findOneBy = jest.fn().mockResolvedValue(makeChannel('mine'));
+      const repository = makeUpdateRepository({ findOneBy });
+
+      await makeService(repository).updateChannel('uuid', 'user-id', {
+        nickname: 'mine',
+        name: 'Renamed',
+      });
+
+      expect(findOneBy).toHaveBeenCalledTimes(1);
     });
   });
 });

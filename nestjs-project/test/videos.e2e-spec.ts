@@ -6,6 +6,7 @@ import { DataSource, Repository } from 'typeorm';
 import { ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 import { AppModule } from '../src/app.module';
 import { AuthService } from '../src/auth/auth.service';
+import { Category } from '../src/categories/entities/category.entity';
 import { Channel } from '../src/channels/entities/channel.entity';
 import { DomainExceptionFilter } from '../src/common/filters/domain-exception.filter';
 import { ValidationExceptionFilter } from '../src/common/filters/validation-exception.filter';
@@ -17,6 +18,7 @@ describe('Videos (e2e)', () => {
   let dataSource: DataSource;
   let channelRepository: Repository<Channel>;
   let videoRepository: Repository<Video>;
+  let categoryRepository: Repository<Category>;
   let throttlerStorage: ThrottlerStorageService;
 
   beforeAll(async () => {
@@ -41,6 +43,7 @@ describe('Videos (e2e)', () => {
     dataSource = moduleFixture.get(DataSource);
     channelRepository = dataSource.getRepository(Channel);
     videoRepository = dataSource.getRepository(Video);
+    categoryRepository = dataSource.getRepository(Category);
     throttlerStorage =
       moduleFixture.get<ThrottlerStorageService>(ThrottlerStorage);
   });
@@ -353,6 +356,287 @@ describe('Videos (e2e)', () => {
         .expect(200);
 
       expect(res.body.status).toBe('draft');
+    });
+  });
+
+  describe('PATCH /videos/:id', () => {
+    async function createVideo(channelId: string): Promise<string> {
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'My video',
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+      return video.id;
+    }
+
+    it('returns 200 with the updated title for the owner', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId);
+
+      const res = await request(app.getHttpServer())
+        .patch(`/videos/${videoId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ title: 'Updated title' })
+        .expect(200);
+
+      expect(res.body.title).toBe('Updated title');
+    });
+
+    it('returns 403 when the video belongs to another channel', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const other = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId);
+
+      const res = await request(app.getHttpServer())
+        .patch(`/videos/${videoId}`)
+        .set('Authorization', `Bearer ${other.accessToken}`)
+        .send({ title: 'Hijacked' })
+        .expect(403);
+
+      expect(res.body.error).toBe('VIDEO_NOT_OWNED');
+    });
+
+    it('returns 404 when categoryId does not match an existing category', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId);
+
+      const res = await request(app.getHttpServer())
+        .patch(`/videos/${videoId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ categoryId: '00000000-0000-0000-0000-000000000000' })
+        .expect(404);
+
+      expect(res.body.error).toBe('CATEGORY_NOT_FOUND');
+    });
+
+    it('returns 404 when the video does not exist', async () => {
+      const { accessToken } = await registerConfirmAndLogin();
+
+      const res = await request(app.getHttpServer())
+        .patch('/videos/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ title: 'Ghost' })
+        .expect(404);
+
+      expect(res.body.error).toBe('VIDEO_NOT_FOUND');
+    });
+
+    it('updates the category when categoryId matches an existing category', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId);
+      const category = await categoryRepository.save(
+        categoryRepository.create({ name: 'Music' }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .patch(`/videos/${videoId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ categoryId: category.id })
+        .expect(200);
+
+      expect(res.body.categoryId).toBe(category.id);
+    });
+  });
+
+  describe('POST /videos/:id/thumbnail', () => {
+    async function createVideo(channelId: string): Promise<string> {
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'My video',
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+      return video.id;
+    }
+
+    it('returns 200 and overwrites thumbnail_key for a valid image', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId);
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/thumbnail`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .attach('thumbnail', Buffer.from('fake-image-bytes'), {
+          filename: 'thumb.png',
+          contentType: 'image/png',
+        })
+        .expect(200);
+
+      expect(res.body.thumbnailKey).toBe(`videos/${videoId}/thumbnail.jpg`);
+    }, 20000);
+
+    it('returns 400 with INVALID_FILE_TYPE for a non-image file', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId);
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/thumbnail`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .attach('thumbnail', Buffer.from('not-an-image'), {
+          filename: 'doc.pdf',
+          contentType: 'application/pdf',
+        })
+        .expect(400);
+
+      expect(res.body.error).toBe('INVALID_FILE_TYPE');
+    });
+
+    it('returns 403 when the video belongs to another channel', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const other = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId);
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/thumbnail`)
+        .set('Authorization', `Bearer ${other.accessToken}`)
+        .attach('thumbnail', Buffer.from('fake-image-bytes'), {
+          filename: 'thumb.png',
+          contentType: 'image/png',
+        })
+        .expect(403);
+
+      expect(res.body.error).toBe('VIDEO_NOT_OWNED');
+    });
+  });
+
+  describe('POST /videos/:id/publish', () => {
+    async function createVideo(
+      channelId: string,
+      status: VideoStatus,
+      publishedAt: Date | null = null,
+    ): Promise<string> {
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'My video',
+          status,
+          published_at: publishedAt,
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+      return video.id;
+    }
+
+    it('returns 200 with publishedAt for a ready, unpublished video', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.READY);
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/publish`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body.id).toBe(videoId);
+      expect(res.body.publishedAt).toBeTruthy();
+    });
+
+    it('returns 409 with INVALID_VIDEO_STATE when the video is not ready', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.PROCESSING);
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/publish`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(409);
+
+      expect(res.body.error).toBe('INVALID_VIDEO_STATE');
+    });
+
+    it('returns 409 with INVALID_VIDEO_STATE when the video is already published', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(
+        channelId,
+        VideoStatus.READY,
+        new Date(),
+      );
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/publish`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(409);
+
+      expect(res.body.error).toBe('INVALID_VIDEO_STATE');
+    });
+
+    it('returns 403 when the video belongs to another channel', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const other = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.READY);
+
+      const res = await request(app.getHttpServer())
+        .post(`/videos/${videoId}/publish`)
+        .set('Authorization', `Bearer ${other.accessToken}`)
+        .expect(403);
+
+      expect(res.body.error).toBe('VIDEO_NOT_OWNED');
+    });
+  });
+
+  describe('GET /channels/:id/manage/videos', () => {
+    async function createVideos(channelId: string, count: number) {
+      for (let i = 1; i <= count; i++) {
+        await videoRepository.save(
+          videoRepository.create({
+            channel_id: channelId,
+            title: `Video ${i}`,
+            storage_key: `videos/${channelId}/${i}.mp4`,
+          }),
+        );
+      }
+    }
+
+    it('returns 200 with paginated items and placeholder counters for the owner', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      await createVideos(channelId, 3);
+
+      const res = await request(app.getHttpServer())
+        .get(`/channels/${channelId}/manage/videos`)
+        .query({ page: 1, pageSize: 2 })
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body.items).toHaveLength(2);
+      expect(res.body.total).toBe(3);
+      expect(res.body.page).toBe(1);
+      expect(res.body.pageSize).toBe(2);
+      expect(res.body.items[0]).toMatchObject({
+        views: 0,
+        likes: 0,
+        comments: 0,
+      });
+    });
+
+    it('returns 403 with CHANNEL_NOT_OWNED for another user channel', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const other = await registerConfirmAndLogin();
+
+      const res = await request(app.getHttpServer())
+        .get(`/channels/${channelId}/manage/videos`)
+        .set('Authorization', `Bearer ${other.accessToken}`)
+        .expect(403);
+
+      expect(res.body.error).toBe('CHANNEL_NOT_OWNED');
+    });
+
+    it('returns 401 without a bearer token', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+
+      await request(app.getHttpServer())
+        .get(`/channels/${channelId}/manage/videos`)
+        .expect(401);
+    });
+
+    it('returns 400 when pageSize is out of range', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+
+      await request(app.getHttpServer())
+        .get(`/channels/${channelId}/manage/videos`)
+        .query({ pageSize: 0 })
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(400);
     });
   });
 
