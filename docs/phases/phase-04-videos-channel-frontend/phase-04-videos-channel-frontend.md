@@ -3,8 +3,9 @@ kind: phase
 name: phase-04-videos-channel-frontend
 test_specs_aware: true
 sources_mtime:
-  docs/phases/phase-04-videos-channel-frontend/context.md: "2026-09-26T09:35:26-04:00"
+  docs/phases/phase-04-videos-channel-frontend/context.md: "2026-09-27T21:50:48-04:00"
   docs/decisions/technical-decisions-phase-04-videos-channel-frontend.md: "2026-09-24T19:42:10-04:00"
+  docs/decisions/technical-decisions-phase-04-frontend-contract-gaps.md: "2026-09-27T21:50:31-04:00"
   docs/phases/phase-04-videos-channel/library-refs.md: "2026-09-23T14:42:22-04:00"
 ---
 
@@ -12,7 +13,7 @@ sources_mtime:
 
 ## Objective
 
-Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos do canal, a edição de vídeo (título, descrição, categoria, thumbnail customizada, visibilidade e publicação de rascunho), a edição das informações do canal e a página pública do canal com listagem paginada de vídeos — consumindo o backend da slice `phase-04-videos-channel` via BFF, com a casca autenticada compartilhada (TopNav, SideNav e menu de conta) — e, no backend, as mudanças pontuais exigidas por TD-04/TD-05 (URL pública de storage e endpoint de thumbnail por redirect presigned).
+Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos do canal, a edição de vídeo (título, descrição, categoria, thumbnail customizada, visibilidade e publicação de rascunho), a edição das informações do canal e a página pública do canal com listagem paginada de vídeos — consumindo o backend da slice `phase-04-videos-channel` via BFF, com a casca autenticada compartilhada (TopNav, SideNav e menu de conta) — e, no backend, as mudanças pontuais exigidas por TD-04/TD-05 (URL pública de storage e endpoint de thumbnail por redirect presigned) e pelas lacunas de contrato decididas em `phase-04-frontend-contract-gaps/TD-01..03` (canal do usuário logado, detalhe de vídeo enriquecido, renovação de token em Server Components).
 
 ---
 
@@ -50,7 +51,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `avatar.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" — variantes de tamanho, fallback de iniciais, a11y, data-slot | `components/ui/__tests__/avatar.test.tsx` |
 | `badge.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" — variantes, data-slot | `components/ui/__tests__/badge.test.tsx` |
 | `pagination.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" — `nav` rotulado, `aria-current="page"`, links `?page=N` | `components/ui/__tests__/pagination.test.tsx` |
@@ -77,7 +78,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `filter-chip.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" + custom-logic — variantes active/normal, `disabled`, a11y, data-slot | `components/ui/__tests__/filter-chip.test.tsx` |
 
 **Dependencies:** none
@@ -101,7 +102,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `menu-item.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" + custom-logic — renderiza `<a>` com `href`, ícone, foco visível, data-slot | `components/ui/__tests__/menu-item.test.tsx` |
 
 **Dependencies:** none
@@ -125,7 +126,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `overlay.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" + custom-logic — renderiza com o token, dispara `onClick`, data-slot | `components/ui/__tests__/overlay.test.tsx` |
 
 **Dependencies:** none
@@ -149,7 +150,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `search-field.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" + custom-logic — `disabled`, nome acessível, limpar restaura vazio, data-slot | `components/ui/__tests__/search-field.test.tsx` |
 
 **Dependencies:** SI-04.0.10
@@ -173,7 +174,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `section-header.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" + custom-logic — título, descrição opcional, `id` repassado, data-slot | `components/ui/__tests__/section-header.test.tsx` |
 
 **Dependencies:** none
@@ -197,7 +198,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `video-thumbnail.tsx` | Unit per testing-guide-next-frontend § "UI Primitives" + custom-logic — `src` com `?v=`, placeholder sem thumbnail, formatação da duração, `alt` vazio dentro de link, data-slot | `components/ui/__tests__/video-thumbnail.test.tsx` |
 
 **Dependencies:** none
@@ -226,7 +227,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `close-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" — renderiza SVG, repassa props, `aria-hidden` por padrão | `components/icons/__tests__/close-icon.test.tsx` |
 | `comment-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" | `components/icons/__tests__/comment-icon.test.tsx` |
 | `edit-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" | `components/icons/__tests__/edit-icon.test.tsx` |
@@ -258,7 +259,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `liked-videos-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" — renderiza SVG, repassa props, `aria-hidden` por padrão | `components/icons/__tests__/liked-videos-icon.test.tsx` |
 | `menu-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" | `components/icons/__tests__/menu-icon.test.tsx` |
 | `mic-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" | `components/icons/__tests__/mic-icon.test.tsx` |
@@ -289,7 +290,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `sort-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" — renderiza SVG, repassa props, `aria-hidden` por padrão | `components/icons/__tests__/sort-icon.test.tsx` |
 | `subscriptions-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" | `components/icons/__tests__/subscriptions-icon.test.tsx` |
 | `thumbs-up-icon.tsx` | Unit per testing-guide-next-frontend § "Client Components" | `components/icons/__tests__/thumbs-up-icon.test.tsx` |
@@ -321,7 +322,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `top-nav.tsx` | Unit per testing-guide-next-frontend § "Client Components" — controles inertes, `aria-label` nos botões só de ícone, `onMenuToggle` | `components/layout/__tests__/top-nav.test.tsx` |
 | `side-nav-item.tsx` | Unit per testing-guide-next-frontend § "Client Components" — `href`, `aria-current="page"` quando ativo | `components/layout/__tests__/side-nav-item.test.tsx` |
 | `subscription-nav-item.tsx` | Unit per testing-guide-next-frontend § "Client Components" — avatar + nome | `components/layout/__tests__/subscription-nav-item.test.tsx` |
@@ -353,7 +354,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `channel-summary.tsx` | Unit per testing-guide-next-frontend § "Client Components" — nome e handle | `components/studio/__tests__/channel-summary.test.tsx` |
 | `video-stats.tsx` | Unit per testing-guide-next-frontend § "Client Components" — contadores formatados com `Intl.NumberFormat` | `components/studio/__tests__/video-stats.test.tsx` |
 | `video-sort-control.tsx` | Unit per testing-guide-next-frontend § "Client Components" — desabilitado | `components/studio/__tests__/video-sort-control.test.tsx` |
@@ -383,7 +384,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `channel-header.tsx` | Unit per testing-guide-next-frontend § "Client Components" — h1 com o nome, nickname, descrição nula | `components/channel/__tests__/channel-header.test.tsx` |
 | `video-card.tsx` | Unit per testing-guide-next-frontend § "Client Components" — link único para `/watch/{id}`, formatação de views e tempo | `components/channel/__tests__/video-card.test.tsx` |
 | `video-sort-filter.tsx` | Unit per testing-guide-next-frontend § "Client Components" — chips desabilitados | `components/channel/__tests__/video-sort-filter.test.tsx` |
@@ -410,7 +411,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `account-menu.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — renderiza identidade da sessão, item "Edit Channel" com `href="/studio/channel"` | `components/layout/__tests__/account-menu.test.tsx` |
 | `account-menu.tsx` | Unit: state assertions per Notes signal — abrir/fechar, Esc, clique no backdrop, devolução de foco, `aria-modal` | (same file) |
 
@@ -436,7 +437,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `side-nav.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — landmark `nav` rotulado, itens e seções renderizados | `components/layout/__tests__/side-nav.test.tsx` |
 | `side-nav.tsx` | Unit: state assertions per Notes signal — item ativo por prefixo de rota | (same file) |
 
@@ -462,7 +463,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `app-shell.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — renderiza TopNav, SideNav e `children` | `components/layout/__tests__/app-shell.test.tsx` |
 | `app-shell.tsx` | Unit: toggle assertions per Notes signal — hambúrguer oculta/mostra a SideNav; avatar abre o AccountMenu | (same file) |
 
@@ -488,7 +489,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `channel-settings-form.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — pré-preenchimento, submit com valores editados | `components/studio/__tests__/channel-settings-form.wiring.test.tsx` |
 | `channel-settings-form.tsx` | Unit: state assertions per Notes signal — erro `NICKNAME_ALREADY_EXISTS` inline, Save pending/disabled | (same file) |
 
@@ -514,7 +515,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `privacy-option.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — renderiza título e descrição | `components/studio/__tests__/privacy-option.test.tsx` |
 | `privacy-option.tsx` | Unit: toggle/state assertions per Notes signal — seleção via clique e teclado, `aria-checked` | (same file) |
 
@@ -539,7 +540,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `thumb-upload.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — renderiza thumbnail atual e botão | `components/studio/__tests__/thumb-upload.test.tsx` |
 | `thumb-upload.tsx` | Unit: state assertions per Notes signal — pré-visualização após escolher arquivo, erro para arquivo não-imagem ou >5MB | (same file) |
 
@@ -565,7 +566,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `video-config-card.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — renderiza link, qualidade e duração | `components/studio/__tests__/video-config-card.test.tsx` |
 | `video-config-card.tsx` | Unit: state assertions per Notes signal — copiar chama `navigator.clipboard.writeText` e mostra confirmação | (same file) |
 
@@ -591,7 +592,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `video-edit-form.tsx` | Unit per testing-guide-next-frontend § "Client Components" baseline — pré-preenchimento e submit com valores editados | `components/studio/__tests__/video-edit-form.wiring.test.tsx` |
 | `video-edit-form.tsx` | Unit: state assertions per Notes signal — Publish habilitado só com `ready` e não publicado, seleção de visibilidade, erros por `errorCode` | (same file) |
 
@@ -620,7 +621,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `env.validation` | Integration: `STORAGE_PUBLIC_ENDPOINT` ausente falha a validação | `src/config/env.validation.integration-spec.ts` |
 | `VideosService.getPlaybackUrl` | Unit: branch logic (mock repo) — a URL assinada usa o cliente de assinatura | `src/videos/videos.service.spec.ts` |
 | `StorageModule` | Unit: expõe `S3_CLIENT` e `S3_PRESIGN_CLIENT` | `src/videos/videos.module.spec.ts` |
@@ -649,7 +650,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `VideosService.getThumbnailUrl` | Unit: branch logic (mock repo) — visibilidade por principal, sem `thumbnail_key` | `src/videos/videos.service.spec.ts` |
 | `VideosService.getThumbnailUrl` | Integration: regra de visibilidade contra o banco | `src/videos/videos.service.integration-spec.ts` |
 | `VideosController` (GET /videos/:id/thumbnail, `updatedAt`) | E2E | `test/videos.e2e-spec.ts` |
@@ -666,22 +667,22 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 
 ---
 
-### SI-04.12 — Backend: GET /channels/me, detalhe do vídeo enriquecido e updatedAt no PATCH de canal
+### SI-04.12 — Backend: GET /channels/me e detalhe do vídeo enriquecido
 
-**Description:** Fechar as lacunas de contrato achadas no plan-build (sem TD dedicado): o frontend precisa conhecer o canal do usuário logado e carregar no formulário os campos editáveis do vídeo.
+**Description:** Implementar as duas lacunas de contrato decididas em `phase-04-frontend-contract-gaps`: o frontend precisa conhecer o canal do usuário logado (TD-01) e carregar no formulário os campos editáveis do vídeo (TD-02).
 
 **Technical actions:**
 
-1. Adicionar `ChannelsService.findByOwner(userId)` retornando o canal do usuário autenticado (lança `ChannelNotFoundException` quando não há canal)
+1. Adicionar `ChannelsService.findByOwner(userId)` retornando o canal do usuário autenticado (lança `ChannelNotFoundException` quando não há canal) — per `phase-04-frontend-contract-gaps/TD-01`
 2. Adicionar handler `GET /channels/me` em `ChannelsController`, declarado **antes** de `GET /channels/:nickname`, com resposta `id`, `name`, `nickname`, `description`, `updatedAt` (per `### API Contracts` → `GET /channels/me`) e `@ApiBearerAuth('access-token')`
-3. Enriquecer a resposta de `GET /videos/:id` em `VideosController` com `description`, `categoryId`, `visibility`, `publishedAt`, `thumbnailKey` e `updatedAt`, sem alterar campos existentes nem a regra de visibilidade
+3. Enriquecer a resposta de `GET /videos/:id` em `VideosController` com `description`, `categoryId`, `visibility`, `publishedAt`, `thumbnailKey` e `updatedAt` — per `phase-04-frontend-contract-gaps/TD-02`, sem alterar campos existentes nem a regra de visibilidade
 4. Incluir `updatedAt` na resposta `200` de `PATCH /channels/:id`
 5. Atualizar a documentação OpenAPI dos três endpoints (`@ApiResponse` com os schemas novos)
 
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `ChannelsService.findByOwner` | Unit: branch logic (mock repo) — canal existente, ausente | `src/channels/channels.service.spec.ts` |
 | `ChannelsController` (GET /channels/me, PATCH `updatedAt`) | E2E | `test/channels.e2e-spec.ts` |
 | `VideosController` (GET /videos/:id enriquecido) | E2E | `test/videos.e2e-spec.ts` |
@@ -722,16 +723,16 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 
 ---
 
-### SI-04.14 — Guarda de rotas autenticadas (Setup): proxy.ts + requireSession()
+### SI-04.14 — Guarda de rotas autenticadas (Setup): proxy.ts + requireSession() + validação de next
 
 **Frontend Runtime spec:** see `## Technical Specifications` → `### Frontend Runtime` → `#### phase-04-videos-channel-frontend/TD-01 — Guarda de Rotas Autenticadas (área de gerenciamento)`
 
 **Technical actions:**
 
-1. Criar `next-frontend/proxy.ts` (Next 16) byte-verbatim do Setup do TD-01: `matcher` `["/studio/:path*"]` e redirect otimista para `/login?next=…` sem sessão válida no cookie `streamtube_session`; conferir a API de `proxy` e o uso do `iron-session` fora de `cookies()` com a documentação atual (context7) antes de implementar
+1. Criar `next-frontend/proxy.ts` (Next 16) byte-verbatim do Setup do TD-01: `matcher` `["/studio/:path*"]` e redirect otimista para `/login?next=…` sem sessão válida no cookie `streamtube_session`
 2. Adicionar `channelId` a `SessionData` e exportar `requireSession()` em `next-frontend/lib/auth/session.ts`: em RSC redireciona para `/login?next=…`; em Route Handler devolve `401` com o envelope `{ statusCode, error: "UNAUTHORIZED", message }` já usado por `lib/auth/refresh.ts`
-3. Validar o parâmetro `next` como same-origin (rejeitar URLs absolutas e `//host`) e honrá-lo no redirect pós-login em `app/(auth)/login/` (per `phase-04-videos-channel-frontend/TD-01`)
-4. Registrar `channelId` em `getSession`/`setSession` (mantendo os campos atuais) e cobrir a leitura pelo `SessionProvider` sem expor tokens ao cliente
+3. Criar `next-frontend/lib/auth/safe-next.ts` — valida o parâmetro `next` como same-origin (rejeita URLs absolutas e `//host`), reutilizado por SI-04.14 (login), SI-04.21 (refresh) e SI-04.30b (proxy)
+4. Honrar `next` validado em `app/(auth)/login/` no redirect pós-login
 
 **Dependencies:** —
 
@@ -741,7 +742,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 
 - `next-frontend/proxy.ts` existe e protege `/studio/:path*`: uma requisição sem cookie de sessão a `/studio/videos` recebe redirect para `/login?next=/studio/videos`.
 - `requireSession()` em RSC redireciona sem sessão; em Route Handler retorna `401` com `error: "UNAUTHORIZED"`.
-- `next=https://evil.com` e `next=//evil.com` são rejeitados e o login redireciona para o destino padrão.
+- `safe-next` rejeita `next=https://evil.com` e `next=//evil.com` e aceita `next=/studio/videos`.
 - `SessionData` inclui `channelId` e nenhum token é exposto ao Client Provider.
 - A aplicação compila (`docker compose exec next-frontend npx tsc --noEmit` sai com código 0).
 
@@ -762,7 +763,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | helper de paginação (`lib/pagination.ts`) | Unit per testing-guide-next-frontend — normalização de `page` e janela de páginas | `lib/__tests__/pagination.test.ts` |
 | `pagination-links.tsx` | Unit per testing-guide-next-frontend § "Client Components" — `nav` rotulado, links, `aria-current` | `components/common/__tests__/pagination-links.test.tsx` |
 
@@ -788,7 +789,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `next.config.ts` | Unit per testing-guide-next-frontend — guarda: `cacheComponents` ausente | `lib/__tests__/no-cache-config.test.ts` |
 
 **Acceptance criteria:**
@@ -805,7 +806,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Technical actions:**
 
 1. Ler `next-frontend/app/api/auth/login/route.ts` — hoje grava `userId` e `channelSlug` vazios em `setSession` após `POST /auth/login`
-2. Após o login bem-sucedido, chamar `GET /channels/me` com o access token recém-emitido (per `### API Contracts` → BFF tier → `POST /api/auth/login — emenda`) e gravar `userId`, `channelId` e `channelSlug` (= `nickname`) na sessão; falha em `/channels/me` não pode deixar sessão parcial
+2. Após o login bem-sucedido, chamar `GET /channels/me` com o access token recém-emitido (per `### API Contracts` → BFF tier → `POST /api/auth/login — emenda`, `phase-04-frontend-contract-gaps/TD-01`) e gravar `userId`, `channelId` e `channelSlug` (= `nickname`) na sessão; falha em `/channels/me` não pode deixar sessão parcial
 3. Atualizar `next-frontend/lib/auth/refresh.ts` para preservar `channelId` e `channelSlug` ao regravar a sessão após o refresh
 4. Estender `next-frontend/mocks/handlers/auth.ts` (ou o handler de canais da SI-04.20) para responder `GET /channels/me` nos testes do login
 
@@ -814,7 +815,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `app/api/auth/login/route.ts` | Integration per testing-guide-next-frontend — sessão passa a conter `channelId`/`channelSlug`; falha em `/channels/me`; pre-existing login tests must still pass | `app/api/auth/login/__tests__/route.integration.test.ts` |
 | `lib/auth/refresh.ts` | Integration per testing-guide-next-frontend — refresh preserva `channelId` e `channelSlug` | `lib/auth/__tests__/refresh.integration.test.ts` |
 
@@ -828,30 +829,61 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 
 ---
 
-### SI-04.19 — BFF: aliases de contrato, upstream autenticado e next/image
+### SI-04.18 — Guarda de rotas autenticadas (Verification)
 
-**Description:** Preparar a base BFF consumida pelas telas: aliases em `lib/api/contracts.ts`, chamada ao upstream com o access token da sessão e configuração de `next/image` para o `src` de thumbnail (per `phase-04-videos-channel-frontend/TD-05`).
+**Frontend Runtime spec:** see `## Technical Specifications` → `### Frontend Runtime` → `#### phase-04-videos-channel-frontend/TD-01 — Guarda de Rotas Autenticadas (área de gerenciamento)` → Verificação
 
 **Technical actions:**
 
-1. Adicionar em `next-frontend/lib/api/contracts.ts` aliases pass-through derivados de `paths` (única fonte autorizada a importar `paths`) para `Video`, `UpdateVideoDto`, `UpdateVideoResponse`, `UploadThumbnailResponse`, `PublishVideoResponse`, `Channel`, `UpdateChannelDto`, `ChannelVideoList`, `ManageVideoList`, `Category` e o envelope de erro reutilizado (`ApiErrorEnvelope`)
-2. Criar `next-frontend/lib/api/authed-upstream.ts` (server-only) que executa chamadas ao `upstream` com o `Authorization: Bearer` do access token da sessão e reaproveita `withRefresh` (single-flight, per `phase-02-auth-frontend/TD-03`) em Route Handlers; em RSC, o cookie é somente-leitura durante a renderização — se o refresh não puder regravar a sessão, tratar `401` como sessão expirada e redirecionar para `/login?next=…` (verificar com a documentação atual do Next via context7)
-3. Configurar em `next-frontend/next.config.ts` `images.localPatterns` para `/api/videos/*/thumbnail` (com query) e validar como o otimizador trata o `302` para o host do `STORAGE_PUBLIC_ENDPOINT` (`remotePatterns` do host, ou `unoptimized` no `VideoThumbnail` para thumbnails de vídeos ainda privados, per `phase-04-videos-channel-frontend/TD-05`); registrar a conclusão no plano
-4. Adicionar teste de integração do helper cobrindo `Authorization` anexado, refresh single-flight e `401` sem refresh possível
+1. Adicionar os testes unitários de `requireSession()` (redirect em RSC, `401 UNAUTHORIZED` em Route Handler) e da validação same-origin do parâmetro `next` (rejeita `https://evil.com` e `//evil.com`), e o teste do `proxy.ts` (matcher `/studio/:path*` e redirect otimista)
+2. Adicionar o teste que varre `app/api/videos/**/route.ts` e `app/api/channels/**/route.ts` e exige `requireSession()` em todo handler de mutação (exceção documentada: `GET /api/videos/[id]/thumbnail`, com sessão opcional; `GET /api/auth/refresh`, que não exige sessão de entrada)
+3. Garantir que os testes das telas de auth da Fase 02 continuam no runner (regression guard)
+
+**Dependencies:** SI-04.14, SI-04.17
 
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
-| `lib/api/authed-upstream.ts` | Integration per testing-guide-next-frontend (MSW) — Bearer anexado, `401` → refresh → nova tentativa, `401` sem refresh | `lib/api/__tests__/authed-upstream.integration.test.ts` |
+|---|---|---|
+| `requireSession()` | Integration per testing-guide-next-frontend — RSC redireciona, Route Handler responde `401` | `lib/auth/__tests__/require-session.test.ts` |
+| validação de `next` | Unit per testing-guide-next-frontend — URLs externas rejeitadas | `lib/auth/__tests__/safe-next.test.ts` |
+| `proxy.ts` | Unit per testing-guide-next-frontend — matcher e redirect otimista | `__tests__/proxy.test.ts` |
+| Route Handlers da área autenticada | Regression guard per testing-guide-next-frontend — todo handler de mutação chama `requireSession()` | `app/api/__tests__/route-handlers-guard.test.ts` |
+
+**Acceptance criteria:**
+
+- `requireSession()` sem sessão redireciona (RSC) e retorna `401` com `error: "UNAUTHORIZED"` (Route Handler).
+- `next=https://evil.com` e `next=//evil.com` são rejeitados pela validação same-origin.
+- Todo Route Handler de mutação de `app/api/videos/**` e `app/api/channels/**` chama `requireSession()`; adicionar um handler sem a chamada faz o teste de varredura falhar.
+- Os testes de auth da Fase 02 continuam passando.
+
+---
+
+### SI-04.19 — BFF: aliases de contrato, upstream autenticado e next/image
+
+**Description:** Preparar a base BFF consumida pelas telas: aliases em `lib/api/contracts.ts`, chamada ao upstream com o access token da sessão, redirect para renovação quando um RSC recebe `401`, e configuração de `next/image` para o `src` de thumbnail (per `phase-04-videos-channel-frontend/TD-05`, `phase-04-frontend-contract-gaps/TD-03`).
+
+**Technical actions:**
+
+1. Adicionar em `next-frontend/lib/api/contracts.ts` aliases pass-through derivados de `paths` (única fonte autorizada a importar `paths`) para `Video`, `UpdateVideoDto`, `UpdateVideoResponse`, `UploadThumbnailResponse`, `PublishVideoResponse`, `Channel`, `UpdateChannelDto`, `ChannelVideoList`, `ManageVideoList`, `Category` e o envelope de erro reutilizado (`ApiErrorEnvelope`)
+2. Criar `next-frontend/lib/api/authed-upstream.ts` (server-only) que executa chamadas ao `upstream` com o `Authorization: Bearer` do access token da sessão e reaproveita `withRefresh` (single-flight, per `phase-02-auth-frontend/TD-03`) em Route Handlers
+3. Em contexto de RSC (não Route Handler), quando `authed-upstream` recebe `401` do upstream, chamar `redirect('/api/auth/refresh?next=' + encodeURIComponent(currentPath))` em vez de tentar `withRefresh()` diretamente — `cookies()` não pode ser gravado durante a renderização de um Server Component (per `phase-04-frontend-contract-gaps/TD-03`)
+4. Configurar em `next-frontend/next.config.ts` `images.localPatterns` para `/api/videos/*/thumbnail` (com query) e validar como o otimizador trata o `302` para o host do `STORAGE_PUBLIC_ENDPOINT` (`remotePatterns` do host, ou `unoptimized` no `VideoThumbnail` para thumbnails de vídeos ainda privados, per `phase-04-videos-channel-frontend/TD-05`); registrar a conclusão no plano
+5. Adicionar teste de integração do helper cobrindo `Authorization` anexado, refresh single-flight em Route Handler, e o redirect para `/api/auth/refresh` em contexto de RSC
+
+**Tests:**
+
+| Artifact | Layer | Test file |
+|---|---|---|
+| `lib/api/authed-upstream.ts` | Integration per testing-guide-next-frontend (MSW) — Bearer anexado, `401` em Route Handler → refresh → nova tentativa, `401` em RSC → redirect para `/api/auth/refresh` | `lib/api/__tests__/authed-upstream.integration.test.ts` |
 
 **Dependencies:** SI-04.13, SI-04.14
 
 **Acceptance criteria:**
 
 - `lib/api/contracts.ts` exporta os aliases listados e nenhum outro arquivo (fora de `mocks/`) importa `paths` de `types.gen.ts`.
-- Uma chamada via `authed-upstream` envia `Authorization: Bearer <accessToken da sessão>`.
-- Uma resposta `401` do upstream dispara exatamente um refresh mesmo com chamadas concorrentes, e a chamada é repetida uma vez.
+- Uma chamada via `authed-upstream` em Route Handler envia `Authorization: Bearer <accessToken da sessão>`; um `401` dispara exatamente um refresh mesmo com chamadas concorrentes.
+- Uma chamada via `authed-upstream` em RSC, ao receber `401`, chama `redirect('/api/auth/refresh?next=...')` em vez de tentar renovar o token diretamente.
 - `next.config.ts` aceita `src="/api/videos/abc/thumbnail?v=…"` no `next/image` sem erro de configuração.
 
 ---
@@ -869,7 +901,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `mocks/handlers/videos.ts` | Integration per testing-guide-next-frontend — cada handler responde o sucesso e os erros mapeados | `mocks/handlers/__tests__/videos.test.ts` |
 | `mocks/handlers/channels.ts` | Integration per testing-guide-next-frontend — paginação e erros | `mocks/handlers/__tests__/channels.test.ts` |
 
@@ -881,6 +913,54 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 - `GET /channels/{id}/manage/videos?page=2` no MSW retorna `{ items, page: 2, pageSize, total }` conforme a factory.
 - `PATCH /channels/{id}` com nickname já em uso retorna `409` com `error: "NICKNAME_ALREADY_EXISTS"`.
 - Uma requisição a caminho sem handler falha o teste (`onUnhandledRequest: "error"`).
+
+---
+
+### SI-04.21 — Renovação de token em Server Components (Setup): GET /api/auth/refresh
+
+**Frontend Runtime spec:** see `## Technical Specifications` → `### Frontend Runtime` → `#### phase-04-frontend-contract-gaps/TD-03 — Renovação de token em Server Components`
+
+**Technical actions:**
+
+1. Criar `next-frontend/app/api/auth/refresh/route.ts` (`GET`) byte-verbatim do Setup do TD-03: lê `next` da query, valida same-origin via `safe-next` (SI-04.14), chama `withRefresh(...)` (helper single-flight de `lib/auth/refresh.ts`, per `phase-02-auth-frontend/TD-03`) e redireciona para `next` em caso de sucesso ou para `/login?next={next}` em caso de falha
+2. Rejeitar com `400` quando `next` não é same-origin ou está ausente
+
+**Dependencies:** SI-04.14
+
+**Tests:** _(empty — Setup SI; smoke-gated by AC; behavior tests live in the Verification SI)_
+
+**Acceptance criteria:**
+
+- `GET /api/auth/refresh?next=/studio/videos` com refresh token válido renova a sessão e redireciona para `/studio/videos`.
+- `GET /api/auth/refresh?next=/studio/videos` com refresh token inválido/expirado redireciona para `/login?next=/studio/videos`.
+- `GET /api/auth/refresh?next=https://evil.com` retorna `400`.
+- A aplicação compila (`docker compose exec next-frontend npx tsc --noEmit` sai com código 0).
+
+---
+
+### SI-04.22 — Renovação de token em Server Components (Verification)
+
+**Frontend Runtime spec:** see `## Technical Specifications` → `### Frontend Runtime` → `#### phase-04-frontend-contract-gaps/TD-03 — Renovação de token em Server Components` → Verificação
+
+**Technical actions:**
+
+1. Adicionar os testes de integração de `GET /api/auth/refresh` (sucesso, falha, `next` inválido) listados na Verificação da spec
+2. Adicionar o teste E2E-de-integração que confirma a cadeia completa: RSC recebe `401` (SI-04.19 ação 3) → redirect para `/api/auth/refresh` (SI-04.21) → volta ao destino original com a sessão renovada
+
+**Dependencies:** SI-04.14, SI-04.19, SI-04.21
+
+**Tests:**
+
+| Artifact | Layer | Test file |
+|---|---|---|
+| `app/api/auth/refresh/route.ts` | Integration per testing-guide-next-frontend (MSW) — sucesso, refresh token inválido, `next` inválido | `app/api/auth/refresh/__tests__/route.integration.test.ts` |
+| cadeia RSC 401 → refresh → retorno | Integration per testing-guide-next-frontend (MSW) — confirma que `authed-upstream` (SI-04.19) e o Route Handler (SI-04.21) compõem corretamente | `lib/api/__tests__/authed-upstream-refresh-chain.integration.test.ts` |
+
+**Acceptance criteria:**
+
+- Os testes de `GET /api/auth/refresh` listados na Verificação da spec passam.
+- O teste de cadeia confirma que um `401` simulado do upstream em contexto de RSC resulta em renovação de sessão e retorno ao destino original, sem exigir novo login quando o refresh token é válido.
+- O helper de refresh single-flight da Fase 02 (`lib/auth/refresh.ts`) e seus testes continuam inalterados.
 
 ---
 
@@ -954,7 +1034,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 
 ### SI-04.30b — Tela de Menu lateral (Left Menu) (lógica & wiring)
 
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `next-frontend/specs/studio-left-menu.plan.md`
 **UI Contract:** see `## Technical Specifications` → `### UI Contracts` → `#### Screen: Menu lateral (Left Menu)`
 
 **Technical actions:**
@@ -1051,7 +1131,7 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 
 ### SI-04.31b — Tela de Menu de conta do usuário (Account User Menu) (lógica & wiring)
 
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `next-frontend/specs/account-user-menu.plan.md`
 **UI Contract:** see `## Technical Specifications` → `### UI Contracts` → `#### Screen: Menu de conta do usuário (Account User Menu)`
 
 **Technical actions:**
@@ -1066,12 +1146,12 @@ Entregar, no frontend (`next-frontend/`), o painel de gerenciamento de vídeos d
 
 - `SI-04.31a` (visual shell must exist before wiring).
 - `SI-04.30b` (layout `(studio)` com `AppShell`).
-- `SI-04.17` (a sessão passa a conter `channelSlug`).
+- `SI-04.17` (a sessão passa a conter `channelSlug`, per `phase-04-frontend-contract-gaps/TD-01`).
 
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `components/layout/account-menu.tsx` (ligado ao `SessionProvider`) | Unit per testing-guide-next-frontend § "Client Components" — identidade da sessão, abrir/fechar pelo avatar, navegação de "Edit Channel" | `components/layout/__tests__/account-menu.wiring.test.tsx` |
 
 E2E for the page (abrir o menu, navegar para `/studio/channel`) is authored externally by `/plan-test-specs` in the spec file referenced by `**Test Specs:**` above.
@@ -1155,15 +1235,15 @@ E2E for the page (abrir o menu, navegar para `/studio/channel`) is authored exte
 
 ### SI-04.32b — Tela de Painel de gerenciamento de vídeos (lógica & wiring)
 
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `next-frontend/specs/studio-videos-panel.plan.md`
 **UI Contract:** see `## Technical Specifications` → `### UI Contracts` → `#### Screen: Painel de gerenciamento de vídeos`
 
 **Technical actions:**
 
-1. **Route guard application** — per UI Contract `**Auth requirement:**` (Authenticated+Owner): a página chama `requireSession()` e usa o `channelId` da sessão (o dono só consegue listar o próprio canal; `CHANNEL_NOT_OWNED` não é esperado) (per `phase-04-videos-channel-frontend/TD-01`)
+1. **Route guard application** — per UI Contract `**Auth requirement:**` (Authenticated+Owner): a página chama `requireSession()` e usa o `channelId` da sessão (per `phase-04-frontend-contract-gaps/TD-01`; o dono só consegue listar o próprio canal, `CHANNEL_NOT_OWNED` não é esperado) (per `phase-04-videos-channel-frontend/TD-01`)
 2. **Rendering strategy application** — per UI Contract `**Rendering strategy:**` (RSC async, dinâmica sem cache): criar `next-frontend/app/(studio)/studio/videos/page.tsx` lendo `searchParams.page` (helper da SI-04.15), sem `"use client"`, sem `'use cache'` (per `phase-04-videos-channel-frontend/TD-02`, `TD-03`), com `loading.tsx` e `error.tsx`
-3. **Endpoint wiring** — per UI Contract `**Server-connected components:**`: no RSC, chamar `GET /channels/{id}/manage/videos` (`page`, `pageSize`) via `authed-upstream` (SI-04.19) e mapear `items` para `VideoListRow` (com `updatedAt` como `?v=` da thumbnail), `total` para "N videos" e `PaginationLinks` (`?page=N`); criar `next-frontend/app/api/videos/[id]/thumbnail/route.ts` (`GET`) que repassa o `302` de `GET /videos/{id}/thumbnail`, com sessão opcional (per `### API Contracts` → BFF tier → `GET /api/videos/[id]/thumbnail`)
-4. **Error mapping** — per UI Contract `**Error Catalog → UX mapping:**`: `UNAUTHORIZED` → redirect para `/login?next=`; `CHANNEL_NOT_OWNED` / `CHANNEL_NOT_FOUND` → `error.tsx` (implementador define o texto, per _TBD_ do UI Contract)
+3. **Endpoint wiring** — per UI Contract `**Server-connected components:**`: no RSC, chamar `GET /channels/{id}/manage/videos` (`page`, `pageSize`) via `authed-upstream` (SI-04.19 — um `401` redireciona para `/api/auth/refresh` per TD-03) e mapear `items` para `VideoListRow` (com `updatedAt` como `?v=` da thumbnail), `total` para "N videos" e `PaginationLinks` (`?page=N`); criar `next-frontend/app/api/videos/[id]/thumbnail/route.ts` (`GET`) que repassa o `302` de `GET /videos/{id}/thumbnail`, com sessão opcional (per `### API Contracts` → BFF tier → `GET /api/videos/[id]/thumbnail`)
+4. **Error mapping** — per UI Contract `**Error Catalog → UX mapping:**`: `UNAUTHORIZED` → redirect para `/api/auth/refresh` quando o 401 vier do RSC, senão `/login?next=`; `CHANNEL_NOT_OWNED` / `CHANNEL_NOT_FOUND` → `error.tsx` (implementador define o texto, per _TBD_ do UI Contract)
 5. **Client-side validation mirror** — _not applicable: tela somente leitura_ (normalização de `page` já coberta pelo helper da SI-04.15)
 
 **Dependencies:**
@@ -1172,13 +1252,13 @@ E2E for the page (abrir o menu, navegar para `/studio/channel`) is authored exte
 - `SI-04.30b` (layout `(studio)`).
 - `SI-04.11` (`GET /videos/:id/thumbnail` e `updatedAt`).
 - `SI-04.15`, `SI-04.16` (dados por RSC e sem cache).
-- `SI-04.19` (`authed-upstream`, aliases, `next/image`).
+- `SI-04.19`, `SI-04.21` (`authed-upstream` + redirect de refresh, aliases, `next/image`).
 - `SI-04.20` (handlers MSW).
 
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `app/api/videos/[id]/thumbnail/route.ts` | Integration per testing-guide-next-frontend (MSW) — repassa `302` com sessão e sem sessão, `404` do upstream | `app/api/videos/[id]/thumbnail/__tests__/route.integration.test.ts` |
 
 E2E for the page (guarda de rota, listagem paginada, navegação para a edição) is authored externally by `/plan-test-specs` in the spec file referenced by `**Test Specs:**` above and consumed JIT by `/implement` Step 3. Page-level Unit testing is excluded by `testing-guide-next-frontend` artifact rule "Pages → E2E only".
@@ -1264,13 +1344,13 @@ E2E for the page (guarda de rota, listagem paginada, navegação para a edição
 
 ### SI-04.33b — Tela de edição de vídeo (lógica & wiring)
 
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `next-frontend/specs/studio-video-edit.plan.md`
 **UI Contract:** see `## Technical Specifications` → `### UI Contracts` → `#### Screen: Tela de edição de vídeo`
 
 **Technical actions:**
 
 1. **Route guard application** — per UI Contract `**Auth requirement:**` (Authenticated+Owner): `requireSession()` na página e em cada Route Handler; posse verificada pelo backend (`VIDEO_NOT_OWNED` → 403) (per `phase-04-videos-channel-frontend/TD-01`)
-2. **Rendering strategy application** — per UI Contract `**Rendering strategy:**` (RSC carrega dados; formulário Client Component): criar `next-frontend/app/(studio)/studio/videos/[id]/edit/page.tsx` que carrega `GET /videos/{id}` e `GET /categories` via `authed-upstream` (não-encontrado → `notFound()`) e renderiza `VideoEditForm` com `video` e `categories`; `"use client"` só no formulário
+2. **Rendering strategy application** — per UI Contract `**Rendering strategy:**` (RSC carrega dados; formulário Client Component): criar `next-frontend/app/(studio)/studio/videos/[id]/edit/page.tsx` que carrega `GET /videos/{id}` e `GET /categories` via `authed-upstream` (não-encontrado → `notFound()`; um `401` redireciona para `/api/auth/refresh` per `phase-04-frontend-contract-gaps/TD-03`) e renderiza `VideoEditForm` com `video` e `categories`; `"use client"` só no formulário
 3. **Endpoint wiring** — per UI Contract `**Server-connected components:**`: criar os Route Handlers `next-frontend/app/api/videos/[id]/route.ts` (`PATCH` → `PATCH /videos/{id}`), `next-frontend/app/api/videos/[id]/thumbnail/route.ts` (`POST` multipart → `POST /videos/{id}/thumbnail`, junto do `GET` da SI-04.32b) e `next-frontend/app/api/videos/[id]/publish/route.ts` (`POST` → `POST /videos/{id}/publish`), cada um com `requireSession()` + refresh single-flight e passando o erro do upstream (per `### API Contracts` → BFF tier); ligar `onSave` (PATCH e, se houver arquivo, POST thumbnail) e `onPublish` do `VideoEditForm`, seguidos de `router.refresh()`
 4. **Error mapping** — per UI Contract `**Error Catalog → UX mapping:**`: `VIDEO_NOT_FOUND` → not-found; `CATEGORY_NOT_FOUND` → erro inline no Category select; `INVALID_FILE_TYPE` / `THUMBNAIL_SIZE_EXCEEDED` → erro inline na ThumbUpload; `INVALID_VIDEO_STATE` → mensagem de formulário + `router.refresh()`; `UNAUTHORIZED` → redirect `/login?next=`; `VIDEO_NOT_OWNED` → _TBD_ (implementador define)
 5. **Client-side validation mirror** — per UI Contract `**Client-side validation mirror:**`: schema Zod com `visibility` (`public` | `unlisted`), `categoryId` uuid entre as opções, `thumbnail` `image/*` ≤5MB; limites de `title`/`description` a partir do `UpdateVideoDto` gerado (SI-04.13)
@@ -1279,15 +1359,15 @@ E2E for the page (guarda de rota, listagem paginada, navegação para a edição
 
 - `SI-04.33a` (visual shell must exist before wiring).
 - `SI-04.30b` (layout `(studio)`).
-- `SI-04.12` (`GET /videos/:id` enriquecido) e `SI-04.11` (`updatedAt` em PATCH/thumbnail).
+- `SI-04.12` (`GET /videos/:id` enriquecido, per `phase-04-frontend-contract-gaps/TD-02`) e `SI-04.11` (`updatedAt` em PATCH/thumbnail).
 - `SI-04.15`, `SI-04.16` (dados por RSC e sem cache).
-- `SI-04.19` (`authed-upstream`, aliases), `SI-04.20` (handlers MSW).
+- `SI-04.19`, `SI-04.21` (`authed-upstream` + redirect de refresh, aliases), `SI-04.20` (handlers MSW).
 - `SI-04.32b` (Route Handler `GET /api/videos/[id]/thumbnail`, mesmo arquivo do `POST` de thumbnail).
 
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `app/api/videos/[id]/route.ts` | Integration per testing-guide-next-frontend (MSW) — `PATCH` sucesso, `401` sem sessão, `403`, `404`, `CATEGORY_NOT_FOUND` | `app/api/videos/[id]/__tests__/route.integration.test.ts` |
 | `app/api/videos/[id]/thumbnail/route.ts` (POST) | Integration per testing-guide-next-frontend (MSW) — multipart repassado, `INVALID_FILE_TYPE`, `THUMBNAIL_SIZE_EXCEEDED`, `401` | `app/api/videos/[id]/thumbnail/__tests__/post.integration.test.ts` |
 | `app/api/videos/[id]/publish/route.ts` | Integration per testing-guide-next-frontend (MSW) — sucesso, `INVALID_VIDEO_STATE`, `401` | `app/api/videos/[id]/publish/__tests__/route.integration.test.ts` |
@@ -1376,13 +1456,13 @@ E2E for the page (guarda, edição completa, publicação) is authored externall
 
 ### SI-04.34b — Tela de edição do canal (lógica & wiring)
 
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `next-frontend/specs/studio-channel-edit.plan.md`
 **UI Contract:** see `## Technical Specifications` → `### UI Contracts` → `#### Screen: Tela de edição do canal`
 
 **Technical actions:**
 
 1. **Route guard application** — per UI Contract `**Auth requirement:**` (Authenticated+Owner): `requireSession()` na página e no Route Handler; posse verificada pelo backend (`CHANNEL_NOT_OWNED` → 403) (per `phase-04-videos-channel-frontend/TD-01`)
-2. **Rendering strategy application** — per UI Contract `**Rendering strategy:**` (RSC carrega dados; formulário Client Component): criar `next-frontend/app/(studio)/studio/channel/page.tsx` que carrega `GET /channels/me` via `authed-upstream` e renderiza `ChannelSummary` e `ChannelSettingsForm`; `"use client"` só no formulário
+2. **Rendering strategy application** — per UI Contract `**Rendering strategy:**` (RSC carrega dados; formulário Client Component): criar `next-frontend/app/(studio)/studio/channel/page.tsx` que carrega `GET /channels/me` via `authed-upstream` (per `phase-04-frontend-contract-gaps/TD-01`; um `401` redireciona para `/api/auth/refresh` per TD-03) e renderiza `ChannelSummary` e `ChannelSettingsForm`; `"use client"` só no formulário
 3. **Endpoint wiring** — per UI Contract `**Server-connected components:**`: criar `next-frontend/app/api/channels/[id]/route.ts` (`PATCH` → `PATCH /channels/{id}`) com `requireSession()` + refresh single-flight; quando o `nickname` muda, regravar `channelSlug` no cookie de sessão (per `### API Contracts` → BFF tier → `PATCH /api/channels/[id]`); ligar `onSubmit` do `ChannelSettingsForm` ao Route Handler e chamar `router.refresh()` em caso de sucesso (per `phase-02-auth-frontend/TD-06`)
 4. **Error mapping** — per UI Contract `**Error Catalog → UX mapping:**`: `NICKNAME_ALREADY_EXISTS` → erro inline no campo "Channel handle" (`FieldError`, `aria-invalid` + `aria-describedby`), sem sufixo automático; `CHANNEL_NOT_FOUND` → not-found; `UNAUTHORIZED` → redirect `/login?next=`; `CHANNEL_NOT_OWNED` → _TBD_ (implementador define)
 5. **Client-side validation mirror** — per UI Contract `**Client-side validation mirror:**`: schema Zod com `nickname` (minúsculas, dígitos e underscore) e limites de `name`/`description` a partir do `UpdateChannelDto` gerado (SI-04.13)
@@ -1391,14 +1471,14 @@ E2E for the page (guarda, edição completa, publicação) is authored externall
 
 - `SI-04.34a` (visual shell must exist before wiring).
 - `SI-04.30b` (layout `(studio)`).
-- `SI-04.12` (`GET /channels/me` e `updatedAt` no PATCH).
+- `SI-04.12` (`GET /channels/me` e `updatedAt` no PATCH, per `phase-04-frontend-contract-gaps/TD-01`).
 - `SI-04.17` (sessão com `channelId`/`channelSlug`).
-- `SI-04.15`, `SI-04.16`, `SI-04.19`, `SI-04.20`.
+- `SI-04.15`, `SI-04.16`, `SI-04.19`, `SI-04.20`, `SI-04.21`.
 
 **Tests:**
 
 | Artifact | Layer | Test file |
-|----------|-------|-----------|
+|---|---|---|
 | `app/api/channels/[id]/route.ts` | Integration per testing-guide-next-frontend (MSW) — `PATCH` sucesso atualiza `channelSlug` na sessão, `NICKNAME_ALREADY_EXISTS`, `401`, `403` | `app/api/channels/[id]/__tests__/route.integration.test.ts` |
 | `components/studio/channel-settings-form.tsx` (ligado ao handler) | Unit per testing-guide-next-frontend § "Client Components" — submit feliz, `NICKNAME_ALREADY_EXISTS` inline, validação pré-submit | `components/studio/__tests__/channel-settings-form.submit.test.tsx` |
 
@@ -1484,14 +1564,14 @@ E2E for the page (guarda, edição e conflito de nickname) is authored externall
 
 ### SI-04.35b — Página pública do canal (lógica & wiring)
 
-**Test Specs:** _pending /plan-test-specs_
+**Test Specs:** see `next-frontend/specs/public-channel-page.plan.md`
 **UI Contract:** see `## Technical Specifications` → `### UI Contracts` → `#### Screen: Página pública do canal`
 
 **Technical actions:**
 
 1. **Route guard application** — per UI Contract `**Auth requirement:**` (Anonymous): página pública, sem `requireSession()` e sem redirect-if-authenticated; a sessão é lida apenas para decidir se a casca autenticada é exibida (cabeçalho anônimo não desenhado — implementador define pelo DS e anota como Open question) (per `phase-04-videos-channel-frontend/TD-01`, exclusão de `/channel/[nickname]`)
 2. **Rendering strategy application** — per UI Contract `**Rendering strategy:**` (RSC async, dinâmica sem cache): criar `next-frontend/app/channel/[nickname]/page.tsx` lendo `searchParams.page`, sem `"use client"` e sem `'use cache'`, com `loading.tsx` (per `phase-04-videos-channel-frontend/TD-02`, `TD-03`)
-3. **Endpoint wiring** — per UI Contract `**Server-connected components:**`: no RSC, chamar `GET /channels/{nickname}` e `GET /channels/{nickname}/videos` (`page`, `pageSize`) via `upstream` (sem token); mapear para `ChannelHeader`, `VideoCard` (thumbnail `/api/videos/{id}/thumbnail?v={updatedAt}`) e `PaginationLinks`; `notFound()` quando o canal não existe
+3. **Endpoint wiring** — per UI Contract `**Server-connected components:**`: no RSC, chamar `GET /channels/{nickname}` e `GET /channels/{nickname}/videos` (`page`, `pageSize`) via `upstream` (sem token — página anônima, não passa por `authed-upstream`); mapear para `ChannelHeader`, `VideoCard` (thumbnail `/api/videos/{id}/thumbnail?v={updatedAt}`) e `PaginationLinks`; `notFound()` quando o canal não existe
 4. **Error mapping** — per UI Contract `**Error Catalog → UX mapping:**`: `CHANNEL_NOT_FOUND` → `notFound()` (página 404 do canal); demais falhas → `error.tsx`
 5. **Client-side validation mirror** — _not applicable_ (normalização de `page` já coberta pela SI-04.15)
 
@@ -1511,36 +1591,6 @@ E2E for the page (guarda, edição e conflito de nickname) is authored externall
 - `GET /channel/inexistente` exibe a página not-found.
 - Cada `VideoCard` é um único link para `/watch/{id}`.
 - Um vídeo publicado no painel aparece em `/channel/{nickname}` no carregamento seguinte, sem invalidação de cache.
-
----
-
-### SI-04.18 — Guarda de rotas autenticadas (Verification)
-
-**Frontend Runtime spec:** see `## Technical Specifications` → `### Frontend Runtime` → `#### phase-04-videos-channel-frontend/TD-01 — Guarda de Rotas Autenticadas (área de gerenciamento)` → Verificação
-
-**Technical actions:**
-
-1. Adicionar os testes unitários de `requireSession()` (redirect em RSC, `401 UNAUTHORIZED` em Route Handler) e da validação same-origin do parâmetro `next` (rejeita `https://evil.com` e `//evil.com`), e o teste do `proxy.ts` (matcher `/studio/:path*` e redirect otimista)
-2. Adicionar o teste que varre `app/api/videos/**/route.ts` e `app/api/channels/**/route.ts` e exige `requireSession()` em todo handler de mutação (exceção documentada: `GET /api/videos/[id]/thumbnail`, com sessão opcional)
-3. Garantir que os testes das telas de auth da Fase 02 continuam no runner (regression guard)
-
-**Dependencies:** SI-04.14, SI-04.17, SI-04.33b, SI-04.34b
-
-**Tests:**
-
-| Artifact | Layer | Test file |
-|----------|-------|-----------|
-| `requireSession()` | Integration per testing-guide-next-frontend — RSC redireciona, Route Handler responde `401` | `lib/auth/__tests__/require-session.test.ts` |
-| validação de `next` | Unit per testing-guide-next-frontend — URLs externas rejeitadas | `lib/auth/__tests__/safe-next.test.ts` |
-| `proxy.ts` | Unit per testing-guide-next-frontend — matcher e redirect otimista | `__tests__/proxy.test.ts` |
-| Route Handlers da área autenticada | Regression guard per testing-guide-next-frontend — todo handler de mutação chama `requireSession()` | `app/api/__tests__/route-handlers-guard.test.ts` |
-
-**Acceptance criteria:**
-
-- `requireSession()` sem sessão redireciona (RSC) e retorna `401` com `error: "UNAUTHORIZED"` (Route Handler).
-- `next=https://evil.com` e `next=//evil.com` são rejeitados pela validação same-origin.
-- Todo Route Handler de mutação de `app/api/videos/**` e `app/api/channels/**` chama `requireSession()`; adicionar um handler sem a chamada faz o teste de varredura falhar.
-- Os testes de auth da Fase 02 continuam passando.
 
 ---
 
@@ -1581,7 +1631,7 @@ Documentar (OpenAPI) — `@ApiResponse` schema atualizado nos quatro endpoints, 
 
 #### GET /channels/me (SI-04.12)
 
-_Achado do plan-build (sem TD dedicado — ver `## Deliverables` → riscos):_ nenhum endpoint existente entrega ao frontend o `id`/`nickname` do canal do usuário logado; o JWT carrega só `sub` e `email`, e `GET /channels/:id/manage/videos`, `PATCH /channels/:id` e `GET /channels/:nickname` exigem `id` ou `nickname`. Endpoint autenticado, declarado **antes** de `GET /channels/:nickname` no controller (evita que `me` seja capturado como nickname).
+_Decidido em `phase-04-frontend-contract-gaps/TD-01`:_ nenhum endpoint existente entrega ao frontend o `id`/`nickname` do canal do usuário logado; o JWT carrega só `sub` e `email`, e `GET /channels/:id/manage/videos`, `PATCH /channels/:id` e `GET /channels/:nickname` exigem `id` ou `nickname`. Endpoint autenticado, declarado **antes** de `GET /channels/:nickname` no controller (evita que `me` seja capturado como nickname).
 
 **Request headers:**
 - Authorization: Bearer access-token
@@ -1601,7 +1651,7 @@ _Achado do plan-build (sem TD dedicado — ver `## Deliverables` → riscos):_ n
 
 #### GET /videos/:id — enriquecimento da resposta (SI-04.12)
 
-_Achado do plan-build (sem TD dedicado):_ a resposta atual de `GET /videos/:id` (`id`, `title`, `status`, `durationSeconds`, `width`, `height`, `createdAt`) não traz os campos que o formulário de edição precisa carregar. Adição aditiva (nenhum campo existente muda):
+_Decidido em `phase-04-frontend-contract-gaps/TD-02`:_ a resposta atual de `GET /videos/:id` (`id`, `title`, `status`, `durationSeconds`, `width`, `height`, `createdAt`) não traz os campos que o formulário de edição precisa carregar. Adição aditiva (nenhum campo existente muda):
 
 **Response 200 (campos adicionados):**
 - description: string | null
@@ -1621,7 +1671,7 @@ Adição aditiva de `updatedAt: string (date-time)` ao `Response 200` (alimenta 
 
 ---
 
-> _BFF tier — frontend-exposed contract. O navegador chama apenas as rotas FE-facing abaixo (Route Handlers em `app/api/**`); leituras de dados das telas (`GET /categories`, `GET /videos/:id`, `GET /channels/me`, `GET /channels/:id/manage/videos`, `GET /channels/:nickname`, `GET /channels/:nickname/videos`) são feitas por RSC chamando `upstream` no servidor (per `phase-04-videos-channel-frontend/TD-02`) e **não** têm rota FE-facing. Linhas `derived` refletem o `openapi.json` após o SI-04.13 (pré-requisito: export do backend + `scripts/sync-openapi.sh` + `npm run openapi:types`), transcritas byte-verbatim do plano irmão `phase-04-videos-channel` (contrato-fonte atual ainda não contém `/videos`, `/channels`, `/categories`); o SI-04.13 reconcilia. Todo Route Handler de dados/mutação chama `requireSession()` (per `phase-04-videos-channel-frontend/TD-01`) e usa o helper de refresh single-flight (per `phase-02-auth-frontend/TD-03`)._
+> _BFF tier — frontend-exposed contract. O navegador chama apenas as rotas FE-facing abaixo (Route Handlers em `app/api/**`); leituras de dados das telas (`GET /categories`, `GET /videos/:id`, `GET /channels/me`, `GET /channels/:id/manage/videos`, `GET /channels/:nickname`, `GET /channels/:nickname/videos`) são feitas por RSC chamando `upstream` no servidor (per `phase-04-videos-channel-frontend/TD-02`) e **não** têm rota FE-facing. Linhas `derived` refletem o `openapi.json` após o SI-04.13 (pré-requisito: export do backend + `scripts/sync-openapi.sh` + `npm run openapi:types`), transcritas byte-verbatim do plano irmão `phase-04-videos-channel` (contrato-fonte atual ainda não contém `/videos`, `/channels`, `/categories`); o SI-04.13 reconcilia. Todo Route Handler de dados/mutação chama `requireSession()` (per `phase-04-videos-channel-frontend/TD-01`) e, quando o access token expira, redireciona para o Route Handler de renovação (per `phase-04-frontend-contract-gaps/TD-03`)._
 
 #### GET /api/videos/[id]/thumbnail (SI-04.32b)
 
@@ -1664,7 +1714,7 @@ Adição aditiva de `updatedAt: string (date-time)` ao `Response 200` (alimenta 
 **Request headers:**
 - Content-Type: multipart/form-data *(derived: project contract source)*
 
-**Request body:** campo `thumbnail` (file) — repassado como `FormData` *(derived: project contract source — fields per source; not re-spelled to avoid duplication)*
+**Request body:** campo `thumbnail` (file) — repassado como `FormData` *(derived: project contract source — fields per source; not re-spelled here to avoid duplication)*
 
 **Response 200 (FE-facing):** `{ id, thumbnailKey, updatedAt }` — pass-through *(derived: project contract source; reshape: none)*
 
@@ -1716,13 +1766,32 @@ Adição aditiva de `updatedAt: string (date-time)` ao `Response 200` (alimenta 
 
 ---
 
+#### GET /api/auth/refresh (SI-04.14)
+
+_Nova rota BFF, per `phase-04-frontend-contract-gaps/TD-03`._ Renova o access token quando um RSC recebe `401` do upstream e não pode gravar cookie diretamente (limite de `cookies()` fora de Server Function/Route Handler, confirmado na documentação do Next.js 16.2.2 — `cookies()` só lê cookies de entrada em Server Components).
+
+**Request query parameters:**
+- next: string, required — caminho de retorno; validado como same-origin antes do redirect *(per phase-04-frontend-contract-gaps/TD-03)*
+
+**forwards-to:** `POST /auth/refresh` *(derived: project contract source)*, via o helper de refresh single-flight já existente *(per phase-02-auth-frontend/TD-03)*
+
+**Set-Cookie / session side-effect:** regrava `accessToken`/`refreshToken` no cookie `streamtube_session` em caso de sucesso *(per phase-02-auth-frontend/TD-02)*
+
+**Response 302 (FE-facing):** redirect para `next` em caso de sucesso *(per phase-04-frontend-contract-gaps/TD-03)*
+
+**Error responses (FE-facing):**
+- 302 → `/login?next={next}`: quando o refresh falha (refresh token inválido/expirado) *(per phase-04-frontend-contract-gaps/TD-03)*
+- 400: quando `next` não é same-origin *(per phase-04-frontend-contract-gaps/TD-03)*
+
+---
+
 #### POST /api/auth/login — emenda (SI-04.17)
 
 Emenda ao Route Handler existente da Fase 02 (`app/api/auth/login/route.ts`); só o delta:
 
 **forwards-to:** `POST /auth/login` *(derived: project contract source)* seguido de `GET /channels/me` *(derived: project contract source)* com o access token recém-emitido.
 
-**Set-Cookie / session side-effect:** além de `accessToken`/`refreshToken`/`email`, o cookie `streamtube_session` passa a guardar `userId`, `channelId` (novo campo de `SessionData`) e `channelSlug` (= `nickname`), hoje gravados vazios pelo handler; `requireSession()` expõe `channelId` aos handlers e RSC da área autenticada *(_undetermined — no TD governs this projection; extends `phase-02-auth-frontend/TD-02` session shape_)*
+**Set-Cookie / session side-effect:** além de `accessToken`/`refreshToken`/`email`, o cookie `streamtube_session` passa a guardar `userId`, `channelId` (novo campo de `SessionData`) e `channelSlug` (= `nickname`), hoje gravados vazios pelo handler; `requireSession()` expõe `channelId` aos handlers e RSC da área autenticada *(per phase-04-frontend-contract-gaps/TD-01)*
 
 ---
 
@@ -1731,7 +1800,7 @@ Emenda ao Route Handler existente da Fase 02 (`app/api/auth/login/route.ts`); s�
 | Endpoint | Anonymous | Authenticated | Owner |
 |----------|-----------|---------------|-------|
 | GET /categories _(inherited — phase-04-videos-channel)_ | ✓ | ✓ | ✓ |
-| GET /videos/:id _(existing — phase-03-videos; enriched SI-04.12)_ | ✓ | ✓ | ✓ |
+| GET /videos/:id _(existing — phase-03-videos; enriched per phase-04-frontend-contract-gaps/TD-02)_ | ✓ | ✓ | ✓ |
 | GET /videos/:id/thumbnail | ✓ (só `ready` + publicado + `public`) | ✓ (idem) | ✓ (qualquer status) |
 | PATCH /videos/:id _(inherited)_ | ✗ | ✗ | ✓ |
 | POST /videos/:id/thumbnail _(inherited)_ | ✗ | ✗ | ✓ |
@@ -1826,8 +1895,8 @@ Todos os códigos abaixo já existem no backend; esta slice não cria códigos n
 
 | errorCode (from §Error Catalog) | UX treatment |
 |---------------------------------|--------------|
-| `UNAUTHORIZED` | Redirect para `/login?next=` (mesma origem) via `requireSession()` |
-| `CHANNEL_NOT_OWNED` | _TBD — implementer decides per screen_ (não esperado: `channelId` vem da sessão) |
+| `UNAUTHORIZED` | Redirect para `/login?next=` (mesma origem) via `requireSession()`; se o `401` vier de dentro do RSC, o Route Handler `GET /api/auth/refresh` (per `phase-04-frontend-contract-gaps/TD-03`) tenta renovar antes do login |
+| `CHANNEL_NOT_OWNED` | _TBD — implementer decides per screen_ (não esperado: `channelId` vem da sessão via `phase-04-frontend-contract-gaps/TD-01`) |
 | `CHANNEL_NOT_FOUND` | _TBD — implementer decides per screen_ |
 
 **Client-side validation mirror:** not applicable — tela somente leitura; `page` inválido/ausente normaliza para 1.
@@ -1852,7 +1921,7 @@ Todos os códigos abaixo já existem no backend; esta slice não cria códigos n
 
 **Reused DS components:**
 - shell (`app-shell`, `top-nav`, `side-nav`, `side-nav-item`, `avatar`, ícones da casca) — see screen: Painel de gerenciamento de vídeos
-- `components/studio/video-edit-form.tsx (new)` — VideoEditForm — Container do formulário: carrega os dados atuais do vídeo, combina validação local e envio ao servidor (regra: form = Server-connected como unidade)
+- `components/studio/video-edit-form.tsx (new)` — VideoEditForm — Container do formulário: carrega os dados atuais do vídeo (per `phase-04-frontend-contract-gaps/TD-02`), combina validação local e envio ao servidor (regra: form = Server-connected como unidade)
 - `components/ui/card.tsx` — Card — Herdado (phase-02). Superfície do "Channel card" que envolve campos e rodapé
 - `components/ui/label.tsx` — FormLabel x2 ("Title", "Description") — Herdado (phase-02). Asterisco de obrigatório existe no componente Figma mas não aparece
 - `components/ui/input.tsx` — TextField "Title" — Herdado como Input (phase-02). Pré-preenchido "My Awesome Video"
@@ -1865,7 +1934,7 @@ Todos os códigos abaixo já existem no backend; esta slice não cria códigos n
 - `components/studio/privacy-option.tsx (new)` — PrivacyOption x2 (Public, Unlisted) — Cards estilo radio (ícone, título, descrição), 576px. Seleção local até salvar
 
 **Server-connected components:**
-- `VideoEditForm` — verbs: Carregar as informações atuais do vídeo para edição | endpoint: RSC `upstream` → `GET /videos/{id}` (backend tier, enriquecido SI-04.12; sem rota FE-facing) | reuse: `components/studio/video-edit-form.tsx (new)`
+- `VideoEditForm` — verbs: Carregar as informações atuais do vídeo para edição | endpoint: RSC `upstream` → `GET /videos/{id}` (backend tier, enriquecido per `phase-04-frontend-contract-gaps/TD-02`; sem rota FE-facing) | reuse: `components/studio/video-edit-form.tsx (new)`
 - `Category select` — verbs: Exibir categorias de vídeo disponíveis para escolha | endpoint: RSC `upstream` → `GET /categories` (backend tier; sem rota FE-facing) | reuse: `components/ui/select.tsx (new)`
 - `Save Changes Button` — verbs: Salvar título, descrição e categoria editados do vídeo; Enviar thumbnail customizada do vídeo; Definir visibilidade do vídeo como público ou unlisted | endpoint: `PATCH /api/videos/[id]`, `POST /api/videos/[id]/thumbnail` (§API Contracts → BFF tier — see for `forwards-to` + request/response/projection) | reuse: `components/ui/button.tsx`
 - `Status` — verbs: Exibir se o vídeo está apto para publicação | endpoint: RSC `upstream` → `GET /videos/{id}` (`status`, `publishedAt`) | reuse: new
@@ -1897,7 +1966,7 @@ Todos os códigos abaixo já existem no backend; esta slice não cria códigos n
 | `INVALID_FILE_TYPE` | Erro inline abaixo da ThumbUpload ("apenas imagens") |
 | `THUMBNAIL_SIZE_EXCEEDED` | Erro inline abaixo da ThumbUpload ("máx. 5MB") |
 | `INVALID_VIDEO_STATE` | Mensagem de formulário; desabilita Publish e atualiza Status via `router.refresh()` |
-| `UNAUTHORIZED` | Redirect para `/login?next=` |
+| `UNAUTHORIZED` | Redirect para `/login?next=`, com tentativa de renovação via `GET /api/auth/refresh` primeiro |
 
 **Client-side validation mirror:** _(source: §API Contracts — não há `#### Validation Rules` nesta slice; os limites de `title`/`description` vêm do `UpdateVideoDto` gerado após SI-04.13 — `_undetermined — constraints not spelled in the sibling plan_`)_
 - `thumbnail`: `image/*`, máx. 5MB (espelha `INVALID_FILE_TYPE` / `THUMBNAIL_SIZE_EXCEEDED`)
@@ -1935,14 +2004,14 @@ Todos os códigos abaixo já existem no backend; esta slice não cria códigos n
 - `components/auth/field-error.tsx` — FieldError — reuso existente para o erro "nickname já em uso"
 
 **Server-connected components:**
-- `ChannelSettingsForm` — verbs: Carregar nickname, nome e descrição atuais do canal para pré-preencher o formulário de edição; Salvar alterações de nickname, nome e descrição do canal, rejeitando nickname já em uso | endpoint: RSC `upstream` → `GET /channels/me` (backend tier, SI-04.12) e `PATCH /api/channels/[id]` (§API Contracts → BFF tier — see for `forwards-to` + request/response/projection) | reuse: `components/studio/channel-settings-form.tsx (new)`
+- `ChannelSettingsForm` — verbs: Carregar nickname, nome e descrição atuais do canal para pré-preencher o formulário de edição; Salvar alterações de nickname, nome e descrição do canal, rejeitando nickname já em uso | endpoint: RSC `upstream` → `GET /channels/me` (backend tier, per `phase-04-frontend-contract-gaps/TD-01`) e `PATCH /api/channels/[id]` (§API Contracts → BFF tier — see for `forwards-to` + request/response/projection) | reuse: `components/studio/channel-settings-form.tsx (new)`
 
 **Behaviors:**
 
 *Rendered states:*
 - Loading: `loading.tsx` da rota; Save pending/disabled
 - Empty: not applicable
-- Success: campos pré-preenchidos; após Save, `router.refresh()` e "Last updated" reflete `updatedAt`; se o nickname mudou, sessão atualizada
+- Success: campos pré-preenchidos; após Save, `router.refresh()` e "Last updated" reflete `updatedAt`; se o nickname mudou, sessão atualizada (`channelSlug`, per `phase-04-frontend-contract-gaps/TD-01`)
 - Error: erro inline "nickname já em uso"; detalhe abaixo
 
 *Interactions:*
@@ -1956,7 +2025,7 @@ Todos os códigos abaixo já existem no backend; esta slice não cria códigos n
 | `NICKNAME_ALREADY_EXISTS` | Erro inline no campo "Channel handle" (`FieldError`, `aria-invalid` + `aria-describedby`), sem sugestão automática de sufixo |
 | `CHANNEL_NOT_OWNED` | _TBD — implementer decides per screen_ |
 | `CHANNEL_NOT_FOUND` | not-found da rota |
-| `UNAUTHORIZED` | Redirect para `/login?next=` |
+| `UNAUTHORIZED` | Redirect para `/login?next=`, com tentativa de renovação via `GET /api/auth/refresh` primeiro |
 
 **Client-side validation mirror:** _(source: §API Contracts — sem `#### Validation Rules`; limites vêm do `UpdateChannelDto` gerado após SI-04.13)_
 - `nickname`: minúsculas, dígitos e underscore (formato do backend, per inventário); o "@" é só adorno visual
@@ -2130,18 +2199,19 @@ export async function requireSession(): Promise<SessionData>; // RSC: redirect("
 
 **Aplicação:**
 
-- **Adopts the pattern:** todas as rotas `(studio)/*` (`/studio/videos`, `/studio/videos/[id]/edit`, `/studio/channel`) e todo Route Handler de dados/mutação desta slice (`PATCH /api/videos/[id]`, `POST /api/videos/[id]/thumbnail`, `POST /api/videos/[id]/publish`, `PATCH /api/channels/[id]`).
+- **Adopts the pattern:** todas as rotas `(studio)/*` (`/studio/videos`, `/studio/videos/[id]/edit`, `/studio/channel`) e todo Route Handler de dados/mutação desta slice (`PATCH /api/videos/[id]`, `POST /api/videos/[id]/thumbnail`, `POST /api/videos/[id]/publish`, `PATCH /api/channels/[id]`, `POST /api/auth/login`).
 - **Excludes / boundaries:**
   - `/channel/[nickname]` — página pública/anônima; não chama `requireSession()`
   - `GET /api/videos/[id]/thumbnail` — sessão opcional (anônimo vê thumbnails de vídeos publicados e públicos)
-  - rotas `(auth)/*` e `app/api/auth/*` — inalteradas (exceto a emenda de login do SI-04.17)
+  - `GET /api/auth/refresh` — chamado exatamente quando `requireSession()`/`upstream` detecta 401 (per `phase-04-frontend-contract-gaps/TD-03`), não exige sessão válida de entrada (a validade está no refresh token do cookie)
+  - rotas `(auth)/*` — inalteradas
 
 **Migração:**
 
 | File | Current behavior | Required change | Owning SI |
 |------|-----------------|-----------------|-----------|
 | `next-frontend/lib/auth/session.ts` | `SessionData` sem `channelId`; sem `requireSession()` | Adicionar `channelId` e exportar `requireSession()` | SI-04.14 (Setup) |
-| `next-frontend/app/api/auth/login/route.ts` | Grava `userId`/`channelSlug` vazios | Buscar `GET /channels/me` e gravar `userId`, `channelId`, `channelSlug` | SI-04.17 (Migration) |
+| `next-frontend/app/api/auth/login/route.ts` | Grava `userId`/`channelSlug` vazios | Buscar `GET /channels/me` e gravar `userId`, `channelId`, `channelSlug` (per `phase-04-frontend-contract-gaps/TD-01`) | SI-04.17 (Migration) |
 | `next-frontend/app/(auth)/login/` (form de login) | Pós-login sem destino `next` | Honrar `next` validado como same-origin | SI-04.14 (Setup) |
 
 **Verificação:**
@@ -2211,27 +2281,67 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ p
 
 ---
 
+#### phase-04-frontend-contract-gaps/TD-03 — Renovação de token em Server Components
+
+**Pattern:** RSC trata `401` redirecionando para um Route Handler que renova o token via refresh single-flight e volta ao destino, com `next` validado como same-origin. `cookies()` só lê cookies de entrada em Server Components — ler/gravar cookies de saída é exclusivo de Server Functions e Route Handlers (confirmado na documentação do Next.js 16.2.2, `docs/01-app/03-api-reference/04-functions/cookies.mdx`), então um RSC não pode renovar a sessão sozinho. O Route Handler `GET /api/auth/refresh` reaproveita o helper de refresh single-flight já decidido na Fase 02 (`phase-02-auth-frontend/TD-03`) e limita o custo ao caso raro de token expirado.
+
+**Setup:**
+
+```ts
+// next-frontend/app/api/auth/refresh/route.ts
+export async function GET(request: Request) {
+  const next = new URL(request.url).searchParams.get("next");
+  // validar next como same-origin (rejeitar URLs absolutas e "//host")
+  // await withRefresh(...) — reaproveita o helper single-flight de lib/auth/refresh.ts
+  // sucesso → NextResponse.redirect(next); falha → NextResponse.redirect(`/login?next=${next}`)
+}
+```
+
+**Aplicação:**
+
+- **Adopts the pattern:** todo RSC desta slice que chama `upstream` diretamente e pode receber `401` (`/studio/videos`, `/studio/videos/[id]/edit`, `/studio/channel`, `/channel/[nickname]`).
+- **Excludes / boundaries:**
+  - Route Handlers de mutação (`PATCH /api/videos/[id]`, etc.) — já usam `withRefresh()` diretamente (per `phase-02-auth-frontend/TD-03`), sem precisar de redirect
+  - `GET /api/videos/[id]/thumbnail` — sessão opcional, não força renovação
+
+**Migração:**
+
+| File | Current behavior | Required change | Owning SI |
+|------|-----------------|-----------------|-----------|
+| `next-frontend/lib/api/authed-upstream.ts` | Chama `upstream` com o access token da sessão, sem tratar `401` fora de Route Handler | Em contexto de RSC, um `401` do upstream dispara `redirect('/api/auth/refresh?next=…')` em vez de tentar `withRefresh()` diretamente | SI-04.14 (Setup) |
+
+**Verificação:**
+
+- **Unit:** validação de `next` rejeita URLs externas e `//host` (mesma regra do TD-01).
+- **Integration:** `GET /api/auth/refresh` com refresh token válido renova a sessão e redireciona a `next`; com refresh token inválido, redireciona a `/login?next=`.
+- **E2E:** um RSC que recebe `401` do upstream não quebra a renderização — o usuário é redirecionado e volta à página original após a renovação.
+- **Regression guards:** o helper de refresh single-flight da Fase 02 (`lib/auth/refresh.ts`) e seus testes continuam inalterados — este Route Handler o consome, não o substitui.
+
+---
+
 ### UI ↔ API Traceability Matrix
 
 | Verb | Component | Screen | Endpoint (from API Contracts) | TD ref |
 |------|-----------|--------|-------------------------------|--------|
 | Exibir lista paginada de vídeos do canal com thumbnail, título, visualizações, likes, comentários, tempo de publicação e status | VideoListRow | /studio/videos | RSC `upstream` → `GET /channels/{id}/manage/videos`; thumbnail: `GET /api/videos/[id]/thumbnail` → forwards-to `GET /videos/{id}/thumbnail` | phase-04-videos-channel-frontend/TD-02, TD-05 |
 | Abrir a edição de um vídeo a partir da linha do painel | VideoListRow | /studio/videos | — _(navegação client para `/studio/videos/[id]/edit`; sem chamada)_ | phase-04-videos-channel-frontend/TD-01 |
-| Carregar as informações atuais do vídeo para edição | VideoEditForm | /studio/videos/[id]/edit | RSC `upstream` → `GET /videos/{id}` | phase-04-videos-channel-frontend/TD-02 |
 | Exibir categorias de vídeo disponíveis para escolha | Category select | /studio/videos/[id]/edit | RSC `upstream` → `GET /categories` | phase-04-videos-channel-frontend/TD-02 |
-| Salvar título, descrição e categoria editados do vídeo | Save Changes Button | /studio/videos/[id]/edit | `PATCH /api/videos/[id]` → forwards-to `PATCH /videos/{id}` | phase-02-auth-frontend/TD-05 |
+| Carregar as informações atuais do vídeo para edição | VideoEditForm | /studio/videos/[id]/edit | RSC `upstream` → `GET /videos/{id}` | phase-04-frontend-contract-gaps/TD-02 |
+| Salvar título, descrição e categoria editados do vídeo | Save Changes Button | /studio/videos/[id]/edit | `PATCH /api/videos/[id]` → forwards-to `PATCH /videos/{id}` | phase-02-auth-frontend/TD-05; phase-04-frontend-contract-gaps/TD-02 |
 | Enviar thumbnail customizada do vídeo | Save Changes Button | /studio/videos/[id]/edit | `POST /api/videos/[id]/thumbnail` → forwards-to `POST /videos/{id}/thumbnail` | phase-02-auth-frontend/TD-05 |
-| Definir visibilidade do vídeo como público ou unlisted | Save Changes Button | /studio/videos/[id]/edit | `PATCH /api/videos/[id]` → forwards-to `PATCH /videos/{id}` | phase-02-auth-frontend/TD-05 |
-| Exibir se o vídeo está apto para publicação | Status | /studio/videos/[id]/edit | RSC `upstream` → `GET /videos/{id}` | phase-04-videos-channel-frontend/TD-02 |
+| Definir visibilidade do vídeo como público ou unlisted | Save Changes Button | /studio/videos/[id]/edit | `PATCH /api/videos/[id]` → forwards-to `PATCH /videos/{id}` | phase-02-auth-frontend/TD-05; phase-04-frontend-contract-gaps/TD-02 |
+| Exibir se o vídeo está apto para publicação | Status | /studio/videos/[id]/edit | RSC `upstream` → `GET /videos/{id}` | phase-04-frontend-contract-gaps/TD-02 |
 | Publicar vídeo em rascunho (ação única, só quando processado e ainda não publicado) | PublishButton | /studio/videos/[id]/edit | `POST /api/videos/[id]/publish` → forwards-to `POST /videos/{id}/publish` | phase-02-auth-frontend/TD-05 |
-| Carregar nickname, nome e descrição atuais do canal para pré-preencher o formulário de edição | ChannelSettingsForm | /studio/channel | RSC `upstream` → `GET /channels/me` | phase-04-videos-channel-frontend/TD-02 |
-| Salvar alterações de nickname, nome e descrição do canal, rejeitando nickname já em uso | ChannelSettingsForm | /studio/channel | `PATCH /api/channels/[id]` → forwards-to `PATCH /channels/{id}` | phase-02-auth-frontend/TD-05 |
+| Carregar nickname, nome e descrição atuais do canal para pré-preencher o formulário de edição | ChannelSettingsForm | /studio/channel | RSC `upstream` → `GET /channels/me` | phase-04-frontend-contract-gaps/TD-01 |
+| Salvar alterações de nickname, nome e descrição do canal, rejeitando nickname já em uso | ChannelSettingsForm | /studio/channel | `PATCH /api/channels/[id]` → forwards-to `PATCH /channels/{id}` | phase-02-auth-frontend/TD-05, TD-06 |
 | Exibir informações públicas do canal (nome, nickname e descrição) | ChannelHeader | /channel/[nickname] | RSC `upstream` → `GET /channels/{nickname}` | phase-04-videos-channel-frontend/TD-02, TD-03 |
 | Exibir lista paginada de vídeos públicos publicados do canal | VideoCard | /channel/[nickname] | RSC `upstream` → `GET /channels/{nickname}/videos`; thumbnail: `GET /api/videos/[id]/thumbnail` → forwards-to `GET /videos/{id}/thumbnail` | phase-04-videos-channel-frontend/TD-02, TD-03, TD-05 |
 
 _Capabilities marked in `## Non-UI / Deferred Capabilities` are excluded from this matrix._
 
 ---
+
+<!-- phase-a-complete -->
 
 ## Dependency Map
 
@@ -2260,14 +2370,17 @@ Backend, contrato e Frontend Runtime:
 ```
 SI-04.10 (root — STORAGE_PUBLIC_ENDPOINT)
 └── SI-04.11 — depends on SI-04.10 (thumbnail + updatedAt)
-    └── SI-04.12 — depends on SI-04.11 (channels/me + detalhe do vídeo)
+    └── SI-04.12 — depends on SI-04.11 (channels/me + detalhe do vídeo, per contract-gaps/TD-01, TD-02)
         └── SI-04.13 — depends on SI-04.11, SI-04.12 (openapi sync → types.gen.ts)
             ├── SI-04.17 — depends on SI-04.14, SI-04.12, SI-04.13 (login grava canal na sessão)
-            ├── SI-04.19 — depends on SI-04.13, SI-04.14 (aliases, authed-upstream, next/image)
+            ├── SI-04.19 — depends on SI-04.13, SI-04.14 (aliases, authed-upstream + redirect de refresh, next/image)
             └── SI-04.20 — depends on SI-04.13 (handlers MSW)
-SI-04.14 (root — proxy.ts + requireSession)
-SI-04.15 — depends on SI-04.0.2 (RSC + paginação)
-SI-04.16 (root — sem cache)
+SI-04.14 (root — proxy.ts + requireSession + safe-next)
+├── SI-04.15 — depends on SI-04.0.2 (RSC + paginação)
+├── SI-04.16 (root — sem cache)
+├── SI-04.18 — depends on SI-04.14, SI-04.17 (verificação da guarda)
+└── SI-04.21 — depends on SI-04.14 (Setup: GET /api/auth/refresh, per contract-gaps/TD-03)
+    └── SI-04.22 — depends on SI-04.14, SI-04.19, SI-04.21 (verificação da cadeia RSC 401 → refresh)
 ```
 
 Telas (cross-layer: Xb depende dos SIs de backend/BFF que entregam seus endpoints):
@@ -2281,17 +2394,16 @@ SI-04.30.0 — depends on SI-04.0.9, .0.10, .0.11, .0.12, .0.15, .0.16, .0.17
         │       └── SI-04.31b — depends on SI-04.31a, SI-04.30b, SI-04.17
         ├── SI-04.32.0 — depends on SI-04.0.1, .0.6, .0.8, .0.9, .0.10, .0.11, .0.13
         │   └── SI-04.32a
-        │       └── SI-04.32b — depends on SI-04.32a, SI-04.30b, SI-04.11, SI-04.15, SI-04.16, SI-04.19, SI-04.20
+        │       └── SI-04.32b — depends on SI-04.32a, SI-04.30b, SI-04.11, SI-04.15, SI-04.16, SI-04.19, SI-04.21, SI-04.20
         ├── SI-04.33.0 — depends on SI-04.0.1, .0.7, .0.19, .0.20, .0.21, .0.22
         │   └── SI-04.33a
-        │       └── SI-04.33b — depends on SI-04.33a, SI-04.30b, SI-04.11, SI-04.12, SI-04.15, SI-04.16, SI-04.19, SI-04.20, SI-04.32b
+        │       └── SI-04.33b — depends on SI-04.33a, SI-04.30b, SI-04.11, SI-04.12, SI-04.15, SI-04.16, SI-04.19, SI-04.21, SI-04.20, SI-04.32b
         ├── SI-04.34.0 — depends on SI-04.0.1, .0.13, .0.18
         │   └── SI-04.34a
-        │       └── SI-04.34b — depends on SI-04.34a, SI-04.30b, SI-04.12, SI-04.17, SI-04.15, SI-04.16, SI-04.19, SI-04.20
+        │       └── SI-04.34b — depends on SI-04.34a, SI-04.30b, SI-04.12, SI-04.17, SI-04.15, SI-04.16, SI-04.19, SI-04.20, SI-04.21
         └── SI-04.35.0 — depends on SI-04.0.1, .0.3, .0.8, .0.14
             └── SI-04.35a
                 └── SI-04.35b — depends on SI-04.35a, SI-04.30b, SI-04.11, SI-04.32b, SI-04.15, SI-04.16, SI-04.19, SI-04.20
-SI-04.18 — depends on SI-04.14, SI-04.17, SI-04.33b, SI-04.34b (verificação da guarda; fecha a fase)
 ```
 
 ---
@@ -2322,14 +2434,17 @@ SI-04.18 — depends on SI-04.14, SI-04.17, SI-04.33b, SI-04.34b (verificação 
 - [ ] SI-04.0.22 — Custom-business complex: video-edit-form.tsx
 - [ ] SI-04.10 — Backend: STORAGE_PUBLIC_ENDPOINT e cliente S3 de assinatura
 - [ ] SI-04.11 — Backend: GET /videos/:id/thumbnail e updatedAt nas respostas
-- [ ] SI-04.12 — Backend: GET /channels/me, detalhe do vídeo enriquecido e updatedAt no PATCH de canal
+- [ ] SI-04.12 — Backend: GET /channels/me e detalhe do vídeo enriquecido
 - [ ] SI-04.13 — Pré-requisito: sincronizar openapi.json e regenerar types.gen.ts
-- [ ] SI-04.14 — Guarda de rotas autenticadas (Setup): proxy.ts + requireSession()
+- [ ] SI-04.14 — Guarda de rotas autenticadas (Setup): proxy.ts + requireSession() + validação de next
 - [ ] SI-04.15 — Estratégia de dados e paginação (Setup): RSC + searchParams
 - [ ] SI-04.16 — Cache da página pública (Setup): renderização dinâmica sem cache
 - [ ] SI-04.17 — app/api/auth/login/route.ts → Guarda de rotas autenticadas (dados do canal na sessão)
+- [ ] SI-04.18 — Guarda de rotas autenticadas (Verification)
 - [ ] SI-04.19 — BFF: aliases de contrato, upstream autenticado e next/image
 - [ ] SI-04.20 — MSW: handlers de vídeos, canais e categorias
+- [ ] SI-04.21 — Renovação de token em Server Components (Setup): GET /api/auth/refresh
+- [ ] SI-04.22 — Renovação de token em Server Components (Verification)
 - [ ] SI-04.30.0 — Drift audit: Menu lateral (Left Menu)
 - [ ] SI-04.30a — Tela de Menu lateral (Left Menu) (visual shell)
 - [ ] SI-04.30b — Tela de Menu lateral (Left Menu) (lógica & wiring)
@@ -2348,7 +2463,6 @@ SI-04.18 — depends on SI-04.14, SI-04.17, SI-04.33b, SI-04.34b (verificação 
 - [ ] SI-04.35.0 — Drift audit: Página pública do canal
 - [ ] SI-04.35a — Página pública do canal (visual shell)
 - [ ] SI-04.35b — Página pública do canal (lógica & wiring)
-- [ ] SI-04.18 — Guarda de rotas autenticadas (Verification)
 
 **Per-screen deliverables:**
 

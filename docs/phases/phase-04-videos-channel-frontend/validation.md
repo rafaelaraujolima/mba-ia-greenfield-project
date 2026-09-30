@@ -4,8 +4,9 @@ name: phase-04-videos-channel-frontend
 status: clean
 issue_count: 0
 sources_mtime:
-  docs/phases/phase-04-videos-channel-frontend/context.md: "2026-09-26T09:35:26-04:00"
+  docs/phases/phase-04-videos-channel-frontend/context.md: "2026-09-27T21:50:48-04:00"
   docs/decisions/technical-decisions-phase-04-videos-channel-frontend.md: "2026-09-24T19:42:10-04:00"
+  docs/decisions/technical-decisions-phase-04-frontend-contract-gaps.md: "2026-09-27T21:50:31-04:00"
   docs/project-plan.md: "2026-09-17T19:27:23-04:00"
   docs/decisions/technical-decisions-phase-04-videos-channel.md: "2026-09-23T14:42:22-04:00"
 issues:
@@ -126,7 +127,7 @@ advisories: []
 
 ### Inconsistencies
 
-_None._ (`## UI Inventory` is populated, so the Scope-Subsection orphan check does not apply; every verb in the UI ↔ Capability Join cites one of the 8 capabilities of this slice.)
+_None._ `## UI Inventory` is populated (not deferred/logic-only), so the Scope-Subsection orphan check does not apply to any `Scope: Frontend` TD (TD-01..03 of this slice's own doc, TD-03 of `phase-04-frontend-contract-gaps`). Every current-phase TD's `Capability:` field cites a bullet present in `## Scope`/`## Capability Coverage`. Every verb in the UI ↔ Capability Join cites one of the 8 capabilities of this slice.
 
 ### Ambiguities
 
@@ -134,58 +135,62 @@ _None._
 
 ### Missing Decisions
 
-_None._ (All 8 capability bullets map to at least one TD in `## Capability Coverage` — the first four through the sibling slice's TDs. The FE↔BE contract-sync strategy is inherited from `next-frontend-openapi-typing/TD-01..05` and `openapi-docs-nestjs/TD-02`.)
+_None._ All 8 capability bullets now map to at least one TD in `## Capability Coverage`: "Categorias de vídeo disponíveis na plataforma" via the inherited sibling TD `phase-04-videos-channel/TD-01`; the other three video-editing bullets via the newly-decided `phase-04-frontend-contract-gaps/TD-02`. The FE↔BE contract-sync strategy (Decisão #29) is inherited from `openapi-docs-nestjs/TD-02` (Scope: Cross-layer, "OpenAPI Spec Artifact Strategy") — check does not fire.
 
 ### Dependency Gaps
 
-_None._
+_None._ The three contract gaps found while building the plan (channel-of-the-logged-in-user, video-edit field enrichment, token renewal inside RSC) are now resolved by this slice's own decided TDs (`phase-04-frontend-contract-gaps/TD-01..03`), not left as unaddressed prerequisites from a prior phase.
 
 ### Inherited Constraint Conflicts
 
-_None._
+_None._ `phase-04-frontend-contract-gaps/TD-01` extends the Phase 02 session shape (adds `channelId`) without contradicting `phase-02-auth-frontend/TD-02`'s cookie-session decision. `phase-04-frontend-contract-gaps/TD-03` explicitly reuses the single-flight refresh helper from `phase-02-auth-frontend/TD-03` rather than conflicting with it.
 
 ### Unresolved Open Questions
 
-_None._
+_None._ No TD in `## Decisions Index` is `pending`. Every bullet in `## UI Inventory → ### Open Questions from Inventory` matches, verbatim, an already-resolved OQ-6..OQ-21 from a prior revision (dropped per the merge rule — see `## Resolved Issues`).
 
 ### UI Coverage Gaps
 
-_None._ (All 8 capabilities have at least one verb in the UI ↔ Capability Join.)
+_None._ All 8 capabilities have at least one verb in the UI ↔ Capability Join, including "Categorias de vídeo disponíveis na plataforma" (verb: "Exibir categorias de vídeo disponíveis para escolha" — Category select).
 
-### Capability Consistency
+### Capability Consistency (slicing, phase mode only)
 
-_None._ All 8 `covers_capabilities` entries of this slice match a bullet in `project-plan.md` Fase 04 verbatim; the sibling slice `phase-04-videos-channel` declares none.
+_None._ All 8 `covers_capabilities` entries of this slice match a bullet in `project-plan.md` Fase 04 verbatim (re-verified). The sibling slice `phase-04-videos-channel` declares no `covers_capabilities` (monolithic-fallback semantics — treated as covering all 8 bullets of its phase), so no mismatch to flag.
 
 ## Cross-slice Advisories
 
-_None._ The union of `covers_capabilities` across the two slices of Phase 04 covers all 8 bullets (the previous MC-cross-1..4 no longer apply: this slice now claims them).
+_None._ The union of `covers_capabilities` across the two slices of Phase 04 covers all 8 bullets.
+
+## Active Suppressions
+
+_(no rule loaded — `docs/rules/plan-validate/` is empty; section omitted per Hard rules. Included here only for completeness of this run's notes.)_
 
 ## Resolved Issues
 
-- **IC-1** _(resolved_by marker_frontend_runtime)_ — TD `phase-04-videos-channel-frontend/TD-01` re-classified as `Renders in: frontend-runtime`; UI Inventory body flipped to the logic-only placeholder. Decisions Detail + Decisions Index row patched in context.md. The user's remark on this issue ("preciso remover essa obrigação de Figma") is recorded as a separate follow-up task: make `/screen-inventory` (and dependents) accept a source other than Figma so a slice can reach `ui_in_scope: true` without a Figma file; not addressed in this run. _(Superseded in practice: the slice reached `ui_in_scope: true` with a real Figma inventory.)_
-- **IC-2** _(resolved_by marker_frontend_runtime)_ — TD `phase-04-videos-channel-frontend/TD-02` re-classified as `Renders in: frontend-runtime`; UI Inventory body already logic-only (coalesced with IC-1).
-- **IC-3** _(resolved_by marker_frontend_runtime)_ — TD `phase-04-videos-channel-frontend/TD-03` re-classified as `Renders in: frontend-runtime`; UI Inventory body already logic-only (coalesced with IC-1).
-- **AMB-1** _(resolved_by clarification)_ — Video category, visibility and publish controls are in scope for this slice: the edit form exposes title, description, category (`GET /categories`), visibility (`public | unlisted`) and thumbnail, and the panel exposes the one-way Publish action (`POST /videos/:id/publish`). Follow-up: extend this slice's `covers_capabilities` with the four corresponding bullets (see MC-cross-1..4). _(Done: `covers_capabilities` now lists all 8 bullets.)_
-- **AMB-2** _(resolved_by clarification)_ — Video cards (public channel page and panel thumbnails/titles) link to the watch route `/watch/[id]`, which returns 404 until Phase 05 delivers the page (accepted known gap, same pattern as the Phase 02 reset-password destination). Panel rows also link to the video edit page of this slice.
+- **IC-1** _(resolved_by marker_frontend_runtime)_ — TD `phase-04-videos-channel-frontend/TD-01` re-classified as `Renders in: frontend-runtime`; UI Inventory body flipped to the logic-only placeholder at the time. _(Superseded in practice: the slice reached `ui_in_scope: true` with a real Figma inventory.)_
+- **IC-2** _(resolved_by marker_frontend_runtime)_ — TD `phase-04-videos-channel-frontend/TD-02` re-classified as `Renders in: frontend-runtime`; coalesced with IC-1.
+- **IC-3** _(resolved_by marker_frontend_runtime)_ — TD `phase-04-videos-channel-frontend/TD-03` re-classified as `Renders in: frontend-runtime`; coalesced with IC-1.
+- **AMB-1** _(resolved_by clarification)_ — Video category, visibility and publish controls are in scope for this slice: the edit form exposes title, description, category (`GET /categories`), visibility (`public | unlisted`) and thumbnail, and the panel exposes the one-way Publish action. `covers_capabilities` now lists all 8 bullets.
+- **AMB-2** _(resolved_by clarification)_ — Video cards (public channel page and panel thumbnails/titles) link to the watch route `/watch/[id]`, which returns 404 until Phase 05 delivers the page (accepted known gap). Panel rows link to the video edit page of this slice.
 - **DG-1** _(resolved_by clarification)_ — This slice's plan includes a prerequisite SI executed before any typed-contract work: export the backend `openapi.json`, run `scripts/sync-openapi.sh` and `npm run openapi:types`, and commit both artifacts per `next-frontend-openapi-typing/TD-03`.
 - **OQ-1** _(resolved_by phase-04-videos-channel-frontend/TD-01)_ — TD-01 decided: Option C (`proxy.ts` otimista + `requireSession()` em todo acesso a dados do servidor).
 - **OQ-2** _(resolved_by phase-04-videos-channel-frontend/TD-02)_ — TD-02 decided: Option A (RSC + `searchParams`, URL como estado, paginação por links).
 - **OQ-3** _(resolved_by phase-04-videos-channel-frontend/TD-03)_ — TD-03 decided: Option A (renderização dinâmica sem cache).
 - **OQ-4** _(resolved_by phase-04-videos-channel-frontend/TD-04)_ — TD-04 decided: Option A (`STORAGE_PUBLIC_ENDPOINT` só para assinar URLs de leitura).
 - **OQ-5** _(resolved_by phase-04-videos-channel-frontend/TD-05)_ — TD-05 decided: Option A (`GET /videos/:id/thumbnail` 302 via BFF).
-- **OQ-6** _(resolved_by clarification)_ — Numbered pagination control has no design. The implementer builds `components/ui/pagination.tsx` from the design system (numbered links `?page=N` per TD-02, labeled `nav`, `aria-current="page"`) for both `/studio/videos` and `/channel/[nickname]`; it enters the plan as a component/SI and the designer confirms afterwards.
-- **OQ-7** _(resolved_by clarification)_ — Publish button and Status variants have no Figma art. Implemented from the design system: primary "Publicar" button next to Save Changes, disabled unless the video is `ready` and not yet published (one-way action); the Status shows processing / ready / published / failed with text + tokens. Art for both is recorded as pending from the designer.
-- **OQ-8** _(resolved_by clarification)_ — Copy errors are corrected at implementation time and noted: the video-edit H1 becomes a video-edit title (e.g., "Edit video") instead of "Channel Settings"; Figma mock values ("@techmaster2024" as display name, sample descriptions) never reach the code; the "@" of the handle is a visual adornment and not part of the nickname value. The designer is told outside the pipeline.
-- **OQ-9** _(resolved_by clarification)_ — Status and screen states are defined by the implementer from the design system: badge variants for public / unlisted / draft / processing / error (and `published_at` absent for drafts), and empty / loading / error / not-found states for the panel and the public page (empty channel, unknown nickname, anonymous header with login).
-- **OQ-10** _(resolved_by clarification)_ — Form states follow the Phase 02 patterns (react-hook-form + Zod, `components/auth/field-error.tsx`, pending state that disables submit, success feedback, `aria-invalid` + `aria-describedby`), including the "nickname já em uso" error from `NICKNAME_ALREADY_EXISTS` and thumbnail upload states (sending / error / `image/*` ≤5MB limit).
-- **OQ-11** _(resolved_by clarification)_ — Acknowledged, no change: inert/disabled controls (global search, voice, "+", static subscriptions list, panel filter/search/sort, public-page sort chips) stay as decided in D6/D7; activation needs a capability and backend support in a later phase.
-- **OQ-12** _(resolved_by clarification)_ — Acknowledged, no change: elements omitted by D8/D9 (row kebab, Subscribe, bell, subscriber/video counters, verified badge, Video/About tabs, channel banner and avatar) return with the subscriptions phase or a banner/avatar data model.
-- **OQ-13** _(resolved_by clarification)_ — User answer: "Já existe design". The navigation / authenticated-chrome design (entry to `/studio/channel`, SideNav active state, destinations for "Create" / "Upload video", account menu with Logout) already exists in Figma, but **those frames are not in the inventory** (`screen-inventory-phase-04-videos-channel-frontend.md` only holds the 4 screens; their shell is inventoried as drawn there). Until an inventory extension run adds them, the plan covers only what the 4 frames show. To bring them in: run `/screen-inventory phase-04-videos-channel-frontend` (extension run) with the URLs of those frames, then `/plan-context`, `/plan-validate`, `/plan-resolve`. Logout still has no capability in this slice's `covers_capabilities` (decision 5).
+- **OQ-6** _(resolved_by clarification)_ — Numbered pagination control has no design. The implementer builds `components/ui/pagination.tsx` from the design system (numbered links `?page=N` per TD-02, labeled `nav`, `aria-current="page"`) for both `/studio/videos` and `/channel/[nickname]`.
+- **OQ-7** _(resolved_by clarification)_ — Publish button and Status variants have no Figma art. Implemented from the design system: primary "Publicar" button next to Save Changes, disabled unless the video is `ready` and not yet published; the Status shows processing / ready / published / failed with text + tokens.
+- **OQ-8** _(resolved_by clarification)_ — Copy errors are corrected at implementation time: the video-edit H1 becomes a video-edit title instead of "Channel Settings"; Figma mock values never reach the code; the "@" of the handle is a visual adornment.
+- **OQ-9** _(resolved_by clarification)_ — Status and screen states are defined by the implementer from the design system: badge variants for public / unlisted / draft / processing / error, and empty / loading / error / not-found states for the panel and the public page.
+- **OQ-10** _(resolved_by clarification)_ — Form states follow the Phase 02 patterns (react-hook-form + Zod, `components/auth/field-error.tsx`, pending state, success feedback, `aria-invalid` + `aria-describedby`), including "nickname já em uso" and thumbnail upload states.
+- **OQ-11** _(resolved_by clarification)_ — Acknowledged, no change: inert/disabled controls (D6/D7) stay as decided; activation needs a capability and backend support in a later phase.
+- **OQ-12** _(resolved_by clarification)_ — Acknowledged, no change: elements omitted by D8/D9 return with the subscriptions phase or a banner/avatar data model.
+- **OQ-13** _(resolved_by clarification)_ — Navigation/chrome design exists in Figma but was not in the original inventory scope; addressed by the `screen-inventory` extension run that added the Account User Menu and Left Menu screens. Logout still has no capability in this slice's `covers_capabilities` (decision 5).
 - **OQ-14** _(resolved_by clarification)_ — Acknowledged, no change: video cards link to `/watch/[id]`, a known-gap 404 until Phase 05 (same as AMB-2).
-- **OQ-15** _(resolved_by clarification)_ — Fields possibly missing from the backend (thumbnail duration, Filename and Video Quality of the side card, channel "Last updated") are verified during implementation and omitted when the backend does not expose them; no new backend work in this slice beyond the `updatedAt` already planned in TD-05.
-- **OQ-16** _(resolved_by clarification)_ — UI copy is English, as in Figma and the Phase 02 screens; compact numbers and relative time use the runtime's `Intl.NumberFormat` / `Intl.RelativeTimeFormat`, with no new library.
-- **OQ-17** _(resolved_by clarification)_ — Minor design details (Filter icon that looks like "share", "Video Quality" / "1080p HD" collision, duration badge outside the tile, channel name in cards, desktop-only 1440px frames) are corrected at implementation from the design system, with responsive behavior defined by the implementer; the designer is told outside the pipeline.
-- **OQ-18** _(resolved_by clarification)_ — All planned `(new)` components in the inventory (`components/layout/*`, `components/ui/*`, `components/studio/*`, `components/channel/*` and the icons) are materialized in this slice through bootstrap SIs (author + test), including those for inert/disabled controls, which are still rendered.
-- **OQ-19** _(resolved_by clarification)_ — Logout stays deferred even though the account menu design already draws "Sign Out": the item is omitted from this slice (D17), Logout is not in `covers_capabilities`, and no change to `project-plan.md` is made. The backend contract `POST /api/auth/logout` from Phase 02 stays ready for when the capability enters a phase.
-- **OQ-20** _(resolved_by clarification)_ — D15/D16 stand and the implementer defines the drawer states from the design system: the account menu is built with an accessible Dialog/Sheet primitive (focus trap, Esc and backdrop click close it, focus returns to the avatar), hover/focus/mobile/dark states follow the design system, and the avatar falls back to initials. Identity stays `@channelSlug` plus e-mail from the session, with no session-shape change.
-- **OQ-21** _(resolved_by clarification)_ — Left Menu behavior is defined by the implementer from the design system: only the expanded SideNav is planned (D14); the hamburger toggles show/hide of the SideNav (no collapsed variant for now); the active item uses route-prefix matching (`/studio/videos` and `/studio/videos/*` mark "Your videos") and exposes `aria-current="page"`; the filled/outline icon variants are created by the implementer; "Create" and "Upload video" stay inert; Home, Subscriptions and Liked videos belong to future phases.
+- **OQ-15** _(resolved_by clarification)_ — Fields possibly missing from the backend are verified during implementation and omitted when the backend does not expose them; no new backend work beyond `updatedAt` (TD-05) and the enrichment now decided in `phase-04-frontend-contract-gaps/TD-02`.
+- **OQ-16** _(resolved_by clarification)_ — UI copy is English; compact numbers and relative time use the runtime's `Intl.NumberFormat` / `Intl.RelativeTimeFormat`, with no new library.
+- **OQ-17** _(resolved_by clarification)_ — Minor design details are corrected at implementation from the design system, with responsive behavior defined by the implementer.
+- **OQ-18** _(resolved_by clarification)_ — All planned `(new)` components in the inventory are materialized in this slice through bootstrap SIs (author + test).
+- **OQ-19** _(resolved_by clarification)_ — Logout stays deferred even though the account menu design already draws "Sign Out": the item is omitted (D17), Logout is not in `covers_capabilities`. `POST /api/auth/logout` from Phase 02 stays ready.
+- **OQ-20** _(resolved_by clarification)_ — D15/D16 stand and the implementer defines the drawer states from the design system: accessible Dialog/Sheet primitive, hover/focus/mobile/dark states per design system, avatar falls back to initials. Identity stays `@channelSlug` plus e-mail from the session — now formalized by `phase-04-frontend-contract-gaps/TD-01`, which adds `channelId` to the session and a `GET /channels/me` endpoint so the value is always fresh.
+- **OQ-21** _(resolved_by clarification)_ — Left Menu behavior is defined by the implementer from the design system: only the expanded SideNav is planned (D14); hamburger toggles show/hide; active item uses route-prefix matching and exposes `aria-current="page"`; filled/outline icon variants are created by the implementer; "Create" and "Upload video" stay inert; Home, Subscriptions and Liked videos belong to future phases.
