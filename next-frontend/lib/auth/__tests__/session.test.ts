@@ -27,6 +27,7 @@ const SAMPLE: Parameters<typeof setSession>[0] = {
   userId: "user-1",
   email: "alice@example.com",
   channelSlug: "alice-channel",
+  channelId: "channel-1",
 };
 
 describe("lib/auth/session", () => {

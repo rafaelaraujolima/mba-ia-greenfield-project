@@ -35,6 +35,7 @@ export class ChannelsController {
         name: { type: 'string' },
         nickname: { type: 'string' },
         description: { type: 'string', nullable: true },
+        updatedAt: { type: 'string', format: 'date-time' },
       },
     },
   })
@@ -67,6 +68,7 @@ export class ChannelsController {
     name: string;
     nickname: string;
     description: string | null;
+    updatedAt: string;
   }> {
     const channel = await this.channelsService.updateChannel(id, user.sub, dto);
     return {
@@ -74,6 +76,54 @@ export class ChannelsController {
       name: channel.name,
       nickname: channel.nickname,
       description: channel.description,
+      updatedAt: channel.updated_at.toISOString(),
+    };
+  }
+
+  @Get('me')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: "Get the authenticated user's own channel",
+    description:
+      'Returns the channel owned by the requester. Requires authentication.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Channel information',
+    schema: {
+      properties: {
+        id: { type: 'string', format: 'uuid' },
+        name: { type: 'string' },
+        nickname: { type: 'string' },
+        description: { type: 'string', nullable: true },
+        updatedAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Missing or invalid access token',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Requester has no channel',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async findMine(@CurrentUser() user: JwtPayload): Promise<{
+    id: string;
+    name: string;
+    nickname: string;
+    description: string | null;
+    updatedAt: string;
+  }> {
+    const channel = await this.channelsService.findByOwner(user.sub);
+    return {
+      id: channel.id,
+      name: channel.name,
+      nickname: channel.nickname,
+      description: channel.description,
+      updatedAt: channel.updated_at.toISOString(),
     };
   }
 

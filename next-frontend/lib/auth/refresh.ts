@@ -34,6 +34,7 @@ async function tryRefresh(): Promise<boolean> {
     userId: session.userId,
     email: session.email,
     channelSlug: session.channelSlug,
+    channelId: session.channelId,
   });
 
   return true;

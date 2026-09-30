@@ -7,14 +7,19 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { server } from "@/mocks/server"
 import { LoginForm } from "../login-form"
 
-const { refreshMock } = vi.hoisted(() => ({ refreshMock: vi.fn() }))
+const { refreshMock, pushMock } = vi.hoisted(() => ({
+  refreshMock: vi.fn(),
+  pushMock: vi.fn(),
+}))
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ refresh: refreshMock }),
+  useRouter: () => ({ refresh: refreshMock, push: pushMock }),
+  useSearchParams: () => new URLSearchParams(),
 }))
 
 beforeEach(() => {
   refreshMock.mockClear()
+  pushMock.mockClear()
 })
 
 function envelope(statusCode: number, message: string) {
@@ -43,6 +48,7 @@ describe("<LoginForm /> wiring", () => {
     await user.click(screen.getByRole("button", { name: "Sign in" }))
 
     await waitFor(() => expect(refreshMock).toHaveBeenCalledTimes(1))
+    expect(pushMock).toHaveBeenCalledWith("/")
     expect(received).toHaveLength(1)
     expect(received[0]).toEqual({
       email: "alice@example.com",

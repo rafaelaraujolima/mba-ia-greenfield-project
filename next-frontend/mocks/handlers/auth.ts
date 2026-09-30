@@ -102,3 +102,11 @@ export const handlers = [
     );
   }),
 ];
+
+// NOTE (SI-04.20): the SI-04.17 temporary `GET /channels/me` handler that
+// used to live here was removed in favor of the full channels domain module
+// (mocks/handlers/channels.ts). Its default fixture (id: "channel-fixture-id",
+// nickname: "fixture-channel") was preserved verbatim in
+// mocks/factories/channel.ts's `buildChannel()` default so the login BFF
+// integration test (app/api/auth/login/__tests__/route.integration.test.ts)
+// keeps passing unchanged.

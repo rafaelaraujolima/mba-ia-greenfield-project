@@ -124,6 +124,7 @@ describe('Channels (e2e)', () => {
 
       expect(res.body.nickname).toBe('brand_new');
       expect(res.body.name).toBe('Brand New');
+      expect(res.body.updatedAt).toBeTruthy();
     });
 
     it('returns 409 with NICKNAME_ALREADY_EXISTS when the nickname belongs to another channel', async () => {
@@ -169,6 +170,37 @@ describe('Channels (e2e)', () => {
         .patch(`/channels/${channelId}`)
         .send({ name: 'x' })
         .expect(401);
+    });
+  });
+
+  describe('GET /channels/me', () => {
+    it('returns 200 with the caller own channel information, authenticated', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+
+      const res = await request(app.getHttpServer())
+        .get('/channels/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body.id).toBe(channelId);
+      expect(res.body.nickname).toBeTruthy();
+      expect(res.body.name).toBeTruthy();
+      expect(res.body.updatedAt).toBeTruthy();
+    });
+
+    it('returns 401 without a bearer token', async () => {
+      await request(app.getHttpServer()).get('/channels/me').expect(401);
+    });
+
+    it('is not matched as GET /channels/:nickname with nickname "me"', async () => {
+      const { accessToken } = await registerConfirmAndLogin();
+
+      const res = await request(app.getHttpServer())
+        .get('/channels/me')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      expect(res.body.nickname).not.toBe('me');
     });
   });
 
@@ -235,6 +267,7 @@ describe('Channels (e2e)', () => {
       expect(res.body.total).toBe(1);
       expect(res.body.items).toHaveLength(1);
       expect(res.body.items[0].id).toBe(visible.id);
+      expect(res.body.items[0].updatedAt).toBeTruthy();
     });
 
     it('returns 404 with CHANNEL_NOT_FOUND for an unknown nickname', async () => {

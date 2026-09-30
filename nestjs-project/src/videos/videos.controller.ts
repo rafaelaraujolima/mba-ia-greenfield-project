@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -32,6 +33,7 @@ import { ListChannelVideosDto } from './dto/list-channel-videos.dto';
 import { RequestUploadPartsDto } from './dto/request-upload-parts.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
 import { VideosService } from './videos.service';
+import { THUMBNAIL_CACHE_CONTROL } from './videos.constants';
 
 @ApiTags('videos')
 @Controller()
@@ -114,6 +116,7 @@ export class VideosController {
                 format: 'date-time',
                 nullable: true,
               },
+              updatedAt: { type: 'string', format: 'date-time' },
               views: { type: 'number', example: 0 },
               likes: { type: 'number', example: 0 },
               comments: { type: 'number', example: 0 },
@@ -157,6 +160,7 @@ export class VideosController {
         publishedAt: video.published_at
           ? video.published_at.toISOString()
           : null,
+        updatedAt: video.updated_at.toISOString(),
         views: 0,
         likes: 0,
         comments: 0,
@@ -187,6 +191,7 @@ export class VideosController {
               title: { type: 'string' },
               thumbnailKey: { type: 'string', nullable: true },
               publishedAt: { type: 'string', format: 'date-time' },
+              updatedAt: { type: 'string', format: 'date-time' },
               durationSeconds: { type: 'number', nullable: true },
             },
           },
@@ -221,6 +226,7 @@ export class VideosController {
         title: video.title,
         thumbnailKey: video.thumbnail_key,
         publishedAt: video.published_at!.toISOString(),
+        updatedAt: video.updated_at.toISOString(),
         durationSeconds:
           video.duration_seconds != null
             ? Number(video.duration_seconds)
@@ -351,11 +357,21 @@ export class VideosController {
       properties: {
         id: { type: 'string', format: 'uuid' },
         title: { type: 'string' },
+        description: { type: 'string', nullable: true },
+        categoryId: { type: 'string', format: 'uuid', nullable: true },
+        visibility: { type: 'string', example: 'public' },
         status: { type: 'string', example: 'ready' },
         durationSeconds: { type: 'number', nullable: true },
         width: { type: 'number', nullable: true },
         height: { type: 'number', nullable: true },
+        publishedAt: {
+          type: 'string',
+          format: 'date-time',
+          nullable: true,
+        },
+        thumbnailKey: { type: 'string', nullable: true },
         createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
       },
     },
   })
@@ -370,22 +386,34 @@ export class VideosController {
   ): Promise<{
     id: string;
     title: string;
+    description: string | null;
+    categoryId: string | null;
+    visibility: string;
     status: string;
     durationSeconds: number | null;
     width: number | null;
     height: number | null;
+    publishedAt: string | null;
+    thumbnailKey: string | null;
     createdAt: string;
+    updatedAt: string;
   }> {
     const video = await this.videosService.findOne(id, user?.sub);
     return {
       id: video.id,
       title: video.title,
+      description: video.description,
+      categoryId: video.category_id,
+      visibility: video.visibility,
       status: video.status,
       durationSeconds:
         video.duration_seconds != null ? Number(video.duration_seconds) : null,
       width: video.width,
       height: video.height,
+      publishedAt: video.published_at ? video.published_at.toISOString() : null,
+      thumbnailKey: video.thumbnail_key,
       createdAt: video.created_at.toISOString(),
+      updatedAt: video.updated_at.toISOString(),
     };
   }
 
@@ -412,6 +440,7 @@ export class VideosController {
           format: 'date-time',
           nullable: true,
         },
+        updatedAt: { type: 'string', format: 'date-time' },
       },
     },
   })
@@ -442,6 +471,7 @@ export class VideosController {
     visibility: string;
     status: string;
     publishedAt: string | null;
+    updatedAt: string;
   }> {
     const video = await this.videosService.update(id, user.sub, dto);
     return {
@@ -452,6 +482,7 @@ export class VideosController {
       visibility: video.visibility,
       status: video.status,
       publishedAt: video.published_at ? video.published_at.toISOString() : null,
+      updatedAt: video.updated_at.toISOString(),
     };
   }
 
@@ -478,6 +509,7 @@ export class VideosController {
       properties: {
         id: { type: 'string', format: 'uuid' },
         thumbnailKey: { type: 'string' },
+        updatedAt: { type: 'string', format: 'date-time' },
       },
     },
   })
@@ -500,9 +532,13 @@ export class VideosController {
     @Param('id') id: string,
     @CurrentUser() user: JwtPayload,
     @UploadedFile() file: Express.Multer.File,
-  ): Promise<{ id: string; thumbnailKey: string }> {
+  ): Promise<{ id: string; thumbnailKey: string; updatedAt: string }> {
     const video = await this.videosService.updateThumbnail(id, user.sub, file);
-    return { id: video.id, thumbnailKey: video.thumbnail_key! };
+    return {
+      id: video.id,
+      thumbnailKey: video.thumbnail_key!,
+      updatedAt: video.updated_at.toISOString(),
+    };
   }
 
   @Post('videos/:id/publish')
@@ -601,6 +637,33 @@ export class VideosController {
     @Param('id') id: string,
   ): Promise<{ url: string; statusCode: number }> {
     const url = await this.videosService.getPlaybackUrl(id, 'attachment');
+    return { url, statusCode: HttpStatus.FOUND };
+  }
+
+  @Get('videos/:id/thumbnail')
+  @Public()
+  @Redirect()
+  @Header('Cache-Control', THUMBNAIL_CACHE_CONTROL)
+  @ApiOperation({
+    summary: 'Get a video thumbnail',
+    description:
+      'Redirects to a short-lived pre-signed URL for the thumbnail image. Anonymous and non-owner requesters only see thumbnails of videos that are ready, published and public; the channel owner can see any status.',
+  })
+  @ApiResponse({
+    status: 302,
+    description: 'Redirect to a pre-signed thumbnail URL',
+  })
+  @ApiResponse({
+    status: 404,
+    description:
+      'Video not found, not visible to the requester, or has no thumbnail',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async getThumbnail(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload | undefined,
+  ): Promise<{ url: string; statusCode: number }> {
+    const url = await this.videosService.getThumbnailUrl(id, user?.sub);
     return { url, statusCode: HttpStatus.FOUND };
   }
 }

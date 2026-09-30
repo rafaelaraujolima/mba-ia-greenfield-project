@@ -18,7 +18,7 @@ import type { Queue } from 'bullmq';
 import { CategoriesService } from '../categories/categories.service';
 import { ChannelsService } from '../channels/channels.service';
 import storageConfig from '../config/storage.config';
-import { S3_CLIENT } from '../storage/storage.constants';
+import { S3_CLIENT, S3_PRESIGN_CLIENT } from '../storage/storage.constants';
 import {
   CategoryNotFoundException,
   ChannelNotFoundException,
@@ -51,6 +51,7 @@ const UPLOAD_PART_URL_EXPIRATION_SECONDS = 900;
 const VIDEO_PROCESS_JOB_ATTEMPTS = 3;
 const VIDEO_PROCESS_JOB_BACKOFF_DELAY_MS = 5000;
 const PLAYBACK_URL_EXPIRATION_SECONDS = 900;
+const THUMBNAIL_URL_EXPIRATION_SECONDS = 900;
 
 export type PlaybackDisposition = 'inline' | 'attachment';
 
@@ -74,6 +75,7 @@ export class VideosService {
     private readonly channelsService: ChannelsService,
     private readonly categoriesService: CategoriesService,
     @Inject(S3_CLIENT) private readonly s3Client: S3Client,
+    @Inject(S3_PRESIGN_CLIENT) private readonly s3PresignClient: S3Client,
     @Inject(storageConfig.KEY)
     private readonly storage: ConfigType<typeof storageConfig>,
     @InjectQueue(VIDEO_PROCESSING_QUEUE)
@@ -318,7 +320,7 @@ export class VideosService {
     }
 
     return getSignedUrl(
-      this.s3Client,
+      this.s3PresignClient,
       new GetObjectCommand({
         Bucket: this.storage.bucket,
         Key: video.storage_key,
@@ -327,6 +329,35 @@ export class VideosService {
         }),
       }),
       { expiresIn: PLAYBACK_URL_EXPIRATION_SECONDS },
+    );
+  }
+
+  async getThumbnailUrl(videoId: string, userId?: string): Promise<string> {
+    const video = await this.videoRepository.findOne({
+      where: { id: videoId },
+      relations: ['channel'],
+    });
+    if (!video) throw new VideoNotFoundException();
+
+    const isOwner = userId != null && video.channel.user_id === userId;
+    const isVisibleToPublic =
+      video.status === VideoStatus.READY &&
+      video.published_at !== null &&
+      video.visibility === VideoVisibility.PUBLIC;
+    if (!isOwner && !isVisibleToPublic) {
+      throw new VideoNotFoundException();
+    }
+    if (!video.thumbnail_key) {
+      throw new VideoNotFoundException();
+    }
+
+    return getSignedUrl(
+      this.s3PresignClient,
+      new GetObjectCommand({
+        Bucket: this.storage.bucket,
+        Key: video.thumbnail_key,
+      }),
+      { expiresIn: THUMBNAIL_URL_EXPIRATION_SECONDS },
     );
   }
 

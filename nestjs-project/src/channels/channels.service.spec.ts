@@ -78,6 +78,38 @@ describe('ChannelsService', () => {
     });
   });
 
+  describe('findByOwner', () => {
+    it('returns the channel when the user owns one', async () => {
+      const channel = makeChannel('mine');
+      const channelRepository = makeChannelRepository();
+      channelRepository.findOneBy.mockResolvedValue(channel);
+      const service = new ChannelsService(
+        makeDataSource(makeManager()),
+        channelRepository,
+      );
+
+      const result = await service.findByOwner('user-id');
+
+      expect(channelRepository.findOneBy).toHaveBeenCalledWith({
+        user_id: 'user-id',
+      });
+      expect(result).toBe(channel);
+    });
+
+    it('throws ChannelNotFoundException when the user has no channel', async () => {
+      const channelRepository = makeChannelRepository();
+      channelRepository.findOneBy.mockResolvedValue(null);
+      const service = new ChannelsService(
+        makeDataSource(makeManager()),
+        channelRepository,
+      );
+
+      await expect(service.findByOwner('user-id')).rejects.toThrow(
+        ChannelNotFoundException,
+      );
+    });
+  });
+
   describe('createChannel', () => {
     it('derives nickname from email prefix and saves when no collision', async () => {
       const channel = makeChannel('test');

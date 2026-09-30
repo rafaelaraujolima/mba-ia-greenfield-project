@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 import { server } from "@/mocks/server";
 import { http, HttpResponse } from "msw";
 import { env } from "@/lib/env";
+import type { ApiErrorEnvelope } from "@/lib/api/contracts";
 
 // Cookie store mock for iron-session (same pattern as session.test.ts).
 const cookieMap = new Map<string, string>();
@@ -16,9 +17,16 @@ vi.mock("next/headers", () => ({
 }));
 
 let POST: (req: Request) => Promise<Response>;
+let getSession: () => Promise<{
+  isLoggedIn: boolean;
+  userId: string;
+  channelId: string;
+  channelSlug: string;
+}>;
 
 beforeAll(async () => {
   ({ POST } = await import("@/app/api/auth/login/route"));
+  ({ getSession } = await import("@/lib/auth/session"));
 });
 
 beforeEach(() => {
@@ -42,6 +50,38 @@ describe("POST /api/auth/login", () => {
     expect(body).not.toHaveProperty("refresh_token");
     // iron-session cookie must be set
     expect(cookieMap.has("streamtube_session")).toBe(true);
+  });
+
+  it("writes channelId/channelSlug/userId from GET /channels/me into the session (TD-01)", async () => {
+    const res = await POST(makeRequest({ email: "alice@example.com", password: "pw" }));
+    expect(res.status).toBe(200);
+
+    const session = await getSession();
+    expect(session.isLoggedIn).toBe(true);
+    expect(session.userId).not.toBe("");
+    expect(session.channelId).not.toBe("");
+    expect(session.channelSlug).not.toBe("");
+    expect(session.channelSlug).toBe("fixture-channel");
+    expect(session.channelId).toBe("channel-fixture-id");
+  });
+
+  it("returns an error and writes no session when GET /channels/me fails", async () => {
+    server.use(
+      http.get(`${env.API_URL}/channels/me`, () =>
+        HttpResponse.json<ApiErrorEnvelope>(
+          { statusCode: 404, error: "CHANNEL_NOT_FOUND", message: "Requester has no channel", code: null },
+          { status: 404 }
+        )
+      )
+    );
+
+    const res = await POST(makeRequest({ email: "alice@example.com", password: "pw" }));
+    expect(res.status).toBe(404);
+    const body = (await res.json()) as ApiErrorEnvelope;
+    expect(body).toMatchObject({ statusCode: 404, error: "CHANNEL_NOT_FOUND" });
+
+    // No partial session: no cookie set at all.
+    expect(cookieMap.has("streamtube_session")).toBe(false);
   });
 
   it("returns 401 without setting cookie for invalid credentials (reserved trigger uses badrequest@ — upstream override for 401)", async () => {

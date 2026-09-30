@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import type { ApiErrorEnvelope } from "@/lib/api/contracts"
 import { mapLoginErrorToForm } from "@/lib/auth/error-mapping"
+import { safeNext } from "@/lib/auth/safe-next"
 import { cn } from "@/lib/utils"
 
 // Client-side validation mirror (authored per phase-02-auth-frontend/TD-04 —
@@ -27,6 +28,7 @@ type LoginValues = z.infer<typeof loginSchema>
 
 function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const {
     register,
     handleSubmit,
@@ -51,8 +53,10 @@ function LoginForm({ className, ...props }: React.ComponentProps<"form">) {
     }
 
     // On 200 the BFF has already sealed the iron-session cookie (tokens never
-    // cross to the browser, per TD-02). Refresh so server chrome reflects the
+    // cross to the browser, per TD-02). Navigate to the validated `next`
+    // target (falling back to "/") and refresh so server chrome reflects the
     // authenticated session (per phase-02-auth-frontend/TD-06).
+    router.push(safeNext(searchParams.get("next"), "/"))
     router.refresh()
   }
 

@@ -40,6 +40,14 @@ export class ChannelsService {
     return this.channelRepository.findOneBy({ nickname });
   }
 
+  async findByOwner(userId: string): Promise<Channel> {
+    const channel = await this.channelRepository.findOneBy({
+      user_id: userId,
+    });
+    if (!channel) throw new ChannelNotFoundException();
+    return channel;
+  }
+
   async updateChannel(
     channelId: string,
     userId: string,

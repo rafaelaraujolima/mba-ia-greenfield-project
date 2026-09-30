@@ -319,6 +319,85 @@ describe('VideosService (integration)', () => {
     });
   });
 
+  describe('getThumbnailUrl', () => {
+    it('signs a thumbnail URL for a ready, published, public video for an anonymous requester', async () => {
+      const { channel } = await createUserAndChannel();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channel.id,
+          title: 'Ready video',
+          status: VideoStatus.READY,
+          published_at: new Date(),
+          visibility: VideoVisibility.PUBLIC,
+          storage_key: `videos/${channel.id}/original.mp4`,
+          thumbnail_key: `videos/${channel.id}/thumbnail.jpg`,
+        }),
+      );
+
+      const url = await videosService.getThumbnailUrl(video.id);
+
+      expect(url).toContain(video.thumbnail_key);
+    });
+
+    it('throws VideoNotFoundException for a draft video accessed anonymously', async () => {
+      const { channel } = await createUserAndChannel();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channel.id,
+          title: 'Draft video',
+          status: VideoStatus.DRAFT,
+          storage_key: `videos/${channel.id}/original.mp4`,
+          thumbnail_key: `videos/${channel.id}/thumbnail.jpg`,
+        }),
+      );
+
+      await expect(videosService.getThumbnailUrl(video.id)).rejects.toThrow(
+        VideoNotFoundException,
+      );
+    });
+
+    it('signs a thumbnail URL for a draft video accessed by its owner', async () => {
+      const { user, channel } = await createUserAndChannel();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channel.id,
+          title: 'Draft video',
+          status: VideoStatus.DRAFT,
+          storage_key: `videos/${channel.id}/original.mp4`,
+          thumbnail_key: `videos/${channel.id}/thumbnail.jpg`,
+        }),
+      );
+
+      const url = await videosService.getThumbnailUrl(video.id, user.id);
+
+      expect(url).toContain(video.thumbnail_key);
+    });
+
+    it('throws VideoNotFoundException when the video has no thumbnail_key', async () => {
+      const { user, channel } = await createUserAndChannel();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channel.id,
+          title: 'Ready video',
+          status: VideoStatus.READY,
+          published_at: new Date(),
+          visibility: VideoVisibility.PUBLIC,
+          storage_key: `videos/${channel.id}/original.mp4`,
+        }),
+      );
+
+      await expect(
+        videosService.getThumbnailUrl(video.id, user.id),
+      ).rejects.toThrow(VideoNotFoundException);
+    });
+
+    it('throws VideoNotFoundException for a non-existent video', async () => {
+      await expect(
+        videosService.getThumbnailUrl('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toThrow(VideoNotFoundException);
+    });
+  });
+
   describe('findPublicByChannel', () => {
     async function createVideoWith(
       channelId: string,
