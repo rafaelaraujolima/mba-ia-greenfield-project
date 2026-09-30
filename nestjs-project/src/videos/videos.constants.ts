@@ -6,3 +6,5 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 export const VIDEO_PROCESSING_QUEUE = 'video-processing';
 export const VIDEO_PROCESS_JOB = 'video.process';
+
+export const THUMBNAIL_CACHE_CONTROL = 'public, max-age=60';

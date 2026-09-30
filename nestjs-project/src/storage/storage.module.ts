@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
 import { S3Client } from '@aws-sdk/client-s3';
 import storageConfig from '../config/storage.config';
-import { S3_CLIENT } from './storage.constants';
+import { S3_CLIENT, S3_PRESIGN_CLIENT } from './storage.constants';
 
 @Module({
   imports: [ConfigModule],
@@ -21,7 +21,21 @@ import { S3_CLIENT } from './storage.constants';
           },
         }),
     },
+    {
+      provide: S3_PRESIGN_CLIENT,
+      inject: [storageConfig.KEY],
+      useFactory: (config: ConfigType<typeof storageConfig>) =>
+        new S3Client({
+          endpoint: config.publicEndpoint,
+          region: config.region,
+          forcePathStyle: true,
+          credentials: {
+            accessKeyId: config.accessKeyId,
+            secretAccessKey: config.secretAccessKey,
+          },
+        }),
+    },
   ],
-  exports: [S3_CLIENT],
+  exports: [S3_CLIENT, S3_PRESIGN_CLIENT],
 })
 export class StorageModule {}

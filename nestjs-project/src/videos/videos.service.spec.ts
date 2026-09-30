@@ -11,13 +11,18 @@ import {
   VideoNotOwnedException,
 } from '../common/exceptions/domain.exception';
 import { S3ServiceException } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { VideosService } from './videos.service';
-import { VideoStatus } from './entities/video.entity';
+import { VideoStatus, VideoVisibility } from './entities/video.entity';
 import {
   MAX_THUMBNAIL_FILE_SIZE_BYTES,
   MAX_VIDEO_FILE_SIZE_BYTES,
   VIDEO_PROCESS_JOB,
 } from './videos.constants';
+
+jest.mock('@aws-sdk/s3-request-presigner', () => ({
+  getSignedUrl: jest.fn(),
+}));
 
 function makeVideoRepository(overrides: Record<string, jest.Mock> = {}): any {
   return {
@@ -77,6 +82,7 @@ describe('VideosService', () => {
         channelsService,
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -97,6 +103,7 @@ describe('VideosService', () => {
         channelsService,
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -116,6 +123,7 @@ describe('VideosService', () => {
         makeVideoRepository(),
         channelsService,
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -144,6 +152,7 @@ describe('VideosService', () => {
         channelsService,
         makeCategoriesService(),
         s3Client,
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -175,6 +184,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -196,6 +206,7 @@ describe('VideosService', () => {
         videoRepository,
         makeChannelsService(),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -219,6 +230,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -240,6 +252,7 @@ describe('VideosService', () => {
         videoRepository,
         makeChannelsService(),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -263,6 +276,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -284,6 +298,7 @@ describe('VideosService', () => {
         videoRepository,
         makeChannelsService(),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -318,6 +333,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         s3Client,
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -345,6 +361,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         s3Client,
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -375,6 +392,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         s3Client,
+        makeS3Client(),
         storageConfig,
         queue,
       );
@@ -401,6 +419,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -424,6 +443,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -445,6 +465,7 @@ describe('VideosService', () => {
         videoRepository,
         makeChannelsService(),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -472,6 +493,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -493,6 +515,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -513,6 +536,7 @@ describe('VideosService', () => {
         videoRepository,
         makeChannelsService(),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -537,6 +561,7 @@ describe('VideosService', () => {
         videoRepository,
         makeChannelsService(),
         categoriesService,
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -570,6 +595,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         categoriesService,
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -602,6 +628,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -620,6 +647,7 @@ describe('VideosService', () => {
         makeVideoRepository(),
         makeChannelsService(),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -646,6 +674,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -671,6 +700,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         s3Client,
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -701,6 +731,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -724,6 +755,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -746,6 +778,7 @@ describe('VideosService', () => {
         videoRepository,
         makeChannelsService(),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -771,6 +804,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -787,6 +821,7 @@ describe('VideosService', () => {
         makeVideoRepository(),
         makeChannelsService({ findById: jest.fn().mockResolvedValue(null) }),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -807,6 +842,7 @@ describe('VideosService', () => {
         }),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -826,6 +862,7 @@ describe('VideosService', () => {
             .mockResolvedValue({ id: 'channel-id', user_id: 'user-id' }),
         }),
         makeCategoriesService(),
+        makeS3Client(),
         makeS3Client(),
         storageConfig,
         makeQueue(),
@@ -853,6 +890,7 @@ describe('VideosService', () => {
         }),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -877,6 +915,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -884,6 +923,48 @@ describe('VideosService', () => {
       await expect(
         service.getPlaybackUrl('video-id', 'inline'),
       ).rejects.toThrow(VideoNotFoundException);
+    });
+
+    it('signs the URL with S3_PRESIGN_CLIENT rather than S3_CLIENT', async () => {
+      const video = {
+        id: 'video-id',
+        status: VideoStatus.READY,
+        storage_key: 'videos/video-id/original.mp4',
+      };
+      const videoRepository = makeVideoRepository({
+        findOneBy: jest.fn().mockResolvedValue(video),
+      });
+      const s3Client = makeS3Client();
+      const s3PresignClient = makeS3Client();
+      const getSignedUrlMock = getSignedUrl as jest.Mock;
+      getSignedUrlMock.mockResolvedValue(
+        'https://public-endpoint.example/signed',
+      );
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        s3Client,
+        s3PresignClient,
+        storageConfig,
+        makeQueue(),
+      );
+
+      const url = await service.getPlaybackUrl('video-id', 'inline');
+
+      expect(getSignedUrlMock).toHaveBeenCalledWith(
+        s3PresignClient,
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(getSignedUrlMock).not.toHaveBeenCalledWith(
+        s3Client,
+        expect.anything(),
+        expect.anything(),
+      );
+      expect(url).toBe('https://public-endpoint.example/signed');
+
+      getSignedUrlMock.mockReset();
     });
 
     it('throws InvalidVideoStateException when the video is not ready', async () => {
@@ -897,6 +978,7 @@ describe('VideosService', () => {
         makeChannelsService(),
         makeCategoriesService(),
         makeS3Client(),
+        makeS3Client(),
         storageConfig,
         makeQueue(),
       );
@@ -904,6 +986,118 @@ describe('VideosService', () => {
       await expect(
         service.getPlaybackUrl('video-id', 'inline'),
       ).rejects.toThrow(InvalidVideoStateException);
+    });
+  });
+
+  describe('getThumbnailUrl', () => {
+    function buildService(
+      videoOverrides: Record<string, jest.Mock> = {},
+    ): VideosService {
+      const videoRepository = makeVideoRepository(videoOverrides);
+      return new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+      );
+    }
+
+    it('throws VideoNotFoundException when the video does not exist', async () => {
+      const service = buildService({
+        findOne: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.getThumbnailUrl('video-id')).rejects.toThrow(
+        VideoNotFoundException,
+      );
+    });
+
+    it('signs the URL for a ready, published, public video for an anonymous requester', async () => {
+      const video = {
+        id: 'video-id',
+        status: VideoStatus.READY,
+        published_at: new Date(),
+        visibility: VideoVisibility.PUBLIC,
+        thumbnail_key: 'videos/video-id/thumbnail.jpg',
+        channel: { user_id: 'owner-id' },
+      };
+      const service = buildService({
+        findOne: jest.fn().mockResolvedValue(video),
+      });
+      const getSignedUrlMock = getSignedUrl as jest.Mock;
+      getSignedUrlMock.mockResolvedValue(
+        'https://public-endpoint.example/thumb-signed',
+      );
+
+      const url = await service.getThumbnailUrl('video-id');
+
+      expect(url).toBe('https://public-endpoint.example/thumb-signed');
+      getSignedUrlMock.mockReset();
+    });
+
+    it('throws VideoNotFoundException for a draft video accessed by a non-owner', async () => {
+      const video = {
+        id: 'video-id',
+        status: VideoStatus.DRAFT,
+        published_at: null,
+        visibility: VideoVisibility.PUBLIC,
+        thumbnail_key: 'videos/video-id/thumbnail.jpg',
+        channel: { user_id: 'owner-id' },
+      };
+      const service = buildService({
+        findOne: jest.fn().mockResolvedValue(video),
+      });
+
+      await expect(
+        service.getThumbnailUrl('video-id', 'other-user'),
+      ).rejects.toThrow(VideoNotFoundException);
+      await expect(service.getThumbnailUrl('video-id')).rejects.toThrow(
+        VideoNotFoundException,
+      );
+    });
+
+    it('signs the URL for a draft video accessed by its owner', async () => {
+      const video = {
+        id: 'video-id',
+        status: VideoStatus.DRAFT,
+        published_at: null,
+        visibility: VideoVisibility.PUBLIC,
+        thumbnail_key: 'videos/video-id/thumbnail.jpg',
+        channel: { user_id: 'owner-id' },
+      };
+      const service = buildService({
+        findOne: jest.fn().mockResolvedValue(video),
+      });
+      const getSignedUrlMock = getSignedUrl as jest.Mock;
+      getSignedUrlMock.mockResolvedValue(
+        'https://public-endpoint.example/thumb-signed',
+      );
+
+      const url = await service.getThumbnailUrl('video-id', 'owner-id');
+
+      expect(url).toBe('https://public-endpoint.example/thumb-signed');
+      getSignedUrlMock.mockReset();
+    });
+
+    it('throws VideoNotFoundException when the video has no thumbnail_key, even for the owner', async () => {
+      const video = {
+        id: 'video-id',
+        status: VideoStatus.READY,
+        published_at: new Date(),
+        visibility: VideoVisibility.PUBLIC,
+        thumbnail_key: null,
+        channel: { user_id: 'owner-id' },
+      };
+      const service = buildService({
+        findOne: jest.fn().mockResolvedValue(video),
+      });
+
+      await expect(
+        service.getThumbnailUrl('video-id', 'owner-id'),
+      ).rejects.toThrow(VideoNotFoundException);
     });
   });
 });

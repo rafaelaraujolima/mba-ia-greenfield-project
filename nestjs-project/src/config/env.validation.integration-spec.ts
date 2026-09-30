@@ -9,6 +9,7 @@ const requiredEnv = {
   STORAGE_BUCKET: 'bucket',
   STORAGE_ACCESS_KEY: 'access-key',
   STORAGE_SECRET_KEY: 'secret-key',
+  STORAGE_PUBLIC_ENDPOINT: 'http://localhost:9000',
 };
 
 const validate = (env: Record<string, string>) =>
@@ -38,5 +39,32 @@ describe('envValidationSchema — SWAGGER_ENABLED', () => {
     const { value, error } = validate({});
     expect(error).toBeUndefined();
     expect(value.SWAGGER_ENABLED).toBe('false');
+  });
+});
+
+describe('envValidationSchema — STORAGE_PUBLIC_ENDPOINT', () => {
+  it('should reject when STORAGE_PUBLIC_ENDPOINT is missing', () => {
+    const { STORAGE_PUBLIC_ENDPOINT, ...envWithoutPublicEndpoint } =
+      requiredEnv;
+    const { error } = envValidationSchema.validate(envWithoutPublicEndpoint, {
+      allowUnknown: true,
+      abortEarly: false,
+    });
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('STORAGE_PUBLIC_ENDPOINT');
+  });
+
+  it('should reject STORAGE_PUBLIC_ENDPOINT with an invalid URI', () => {
+    const { error } = validate({ STORAGE_PUBLIC_ENDPOINT: 'not-a-uri' });
+    expect(error).toBeDefined();
+    expect(error!.message).toContain('STORAGE_PUBLIC_ENDPOINT');
+  });
+
+  it('should accept a valid STORAGE_PUBLIC_ENDPOINT', () => {
+    const { error, value } = validate({
+      STORAGE_PUBLIC_ENDPOINT: 'http://localhost:9000',
+    });
+    expect(error).toBeUndefined();
+    expect(value.STORAGE_PUBLIC_ENDPOINT).toBe('http://localhost:9000');
   });
 });

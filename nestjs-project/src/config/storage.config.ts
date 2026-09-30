@@ -2,6 +2,7 @@ import { registerAs } from '@nestjs/config';
 
 export default registerAs('storage', () => ({
   endpoint: process.env.STORAGE_ENDPOINT || 'http://minio:9000',
+  publicEndpoint: process.env.STORAGE_PUBLIC_ENDPOINT!,
   bucket: process.env.STORAGE_BUCKET || 'streamtube',
   accessKeyId: process.env.STORAGE_ACCESS_KEY || 'streamtube',
   secretAccessKey: process.env.STORAGE_SECRET_KEY || 'streamtube123',

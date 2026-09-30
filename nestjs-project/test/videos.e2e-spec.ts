@@ -357,6 +357,33 @@ describe('Videos (e2e)', () => {
 
       expect(res.body.status).toBe('draft');
     });
+
+    it('returns 200 with the enriched editable fields for the owner, keeping existing fields', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const videoId = await createVideo(channelId, VideoStatus.DRAFT);
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${videoId}`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(200);
+
+      // previously-existing fields
+      expect(res.body.id).toBe(videoId);
+      expect(res.body.title).toBe('My video');
+      expect(res.body.status).toBe('draft');
+      expect(res.body).toHaveProperty('durationSeconds');
+      expect(res.body).toHaveProperty('width');
+      expect(res.body).toHaveProperty('height');
+      expect(res.body.createdAt).toBeTruthy();
+
+      // enriched fields
+      expect(res.body).toHaveProperty('description');
+      expect(res.body).toHaveProperty('categoryId');
+      expect(res.body.visibility).toBe('public');
+      expect(res.body).toHaveProperty('publishedAt');
+      expect(res.body).toHaveProperty('thumbnailKey');
+      expect(res.body.updatedAt).toBeTruthy();
+    });
   });
 
   describe('PATCH /videos/:id', () => {
@@ -382,6 +409,7 @@ describe('Videos (e2e)', () => {
         .expect(200);
 
       expect(res.body.title).toBe('Updated title');
+      expect(res.body.updatedAt).toBeTruthy();
     });
 
     it('returns 403 when the video belongs to another channel', async () => {
@@ -466,6 +494,7 @@ describe('Videos (e2e)', () => {
         .expect(200);
 
       expect(res.body.thumbnailKey).toBe(`videos/${videoId}/thumbnail.jpg`);
+      expect(res.body.updatedAt).toBeTruthy();
     }, 20000);
 
     it('returns 400 with INVALID_FILE_TYPE for a non-image file', async () => {
@@ -607,6 +636,7 @@ describe('Videos (e2e)', () => {
         likes: 0,
         comments: 0,
       });
+      expect(res.body.items[0].updatedAt).toBeTruthy();
     });
 
     it('returns 403 with CHANNEL_NOT_OWNED for another user channel', async () => {
@@ -660,6 +690,8 @@ describe('Videos (e2e)', () => {
       expect(res.headers.location).not.toContain(
         'response-content-disposition',
       );
+      expect(new URL(res.headers.location).hostname).toBe('localhost');
+      expect(new URL(res.headers.location).hostname).not.toBe('minio');
     });
 
     it('returns 409 with INVALID_VIDEO_STATE for a non-ready video', async () => {
@@ -705,6 +737,87 @@ describe('Videos (e2e)', () => {
     it('returns 404 with VIDEO_NOT_FOUND for a non-existent video', async () => {
       const res = await request(app.getHttpServer())
         .get('/videos/00000000-0000-0000-0000-000000000000/download')
+        .expect(404);
+
+      expect(res.body.error).toBe('VIDEO_NOT_FOUND');
+    });
+  });
+
+  describe('GET /videos/:id/thumbnail', () => {
+    it('returns 302 redirecting to a pre-signed URL for a ready, published, public video, unauthenticated', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'x',
+          status: VideoStatus.READY,
+          published_at: new Date(),
+          storage_key: `videos/${channelId}/original.mp4`,
+          thumbnail_key: `videos/${channelId}/thumbnail.jpg`,
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${video.id}/thumbnail`)
+        .expect(302);
+
+      expect(res.headers.location).toContain(video.thumbnail_key);
+    });
+
+    it('returns 404 with VIDEO_NOT_FOUND for a draft video, unauthenticated', async () => {
+      const { channelId } = await registerConfirmAndLogin();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'x',
+          status: VideoStatus.DRAFT,
+          storage_key: `videos/${channelId}/original.mp4`,
+          thumbnail_key: `videos/${channelId}/thumbnail.jpg`,
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${video.id}/thumbnail`)
+        .expect(404);
+
+      expect(res.body.error).toBe('VIDEO_NOT_FOUND');
+    });
+
+    it('returns 302 for a draft video requested by its owner', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'x',
+          status: VideoStatus.DRAFT,
+          storage_key: `videos/${channelId}/original.mp4`,
+          thumbnail_key: `videos/${channelId}/thumbnail.jpg`,
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${video.id}/thumbnail`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .expect(302);
+
+      expect(res.headers.location).toContain(video.thumbnail_key);
+    });
+
+    it('returns 404 with VIDEO_NOT_FOUND for a video with no thumbnail_key', async () => {
+      const { accessToken, channelId } = await registerConfirmAndLogin();
+      const video = await videoRepository.save(
+        videoRepository.create({
+          channel_id: channelId,
+          title: 'x',
+          status: VideoStatus.READY,
+          published_at: new Date(),
+          storage_key: `videos/${channelId}/original.mp4`,
+        }),
+      );
+
+      const res = await request(app.getHttpServer())
+        .get(`/videos/${video.id}/thumbnail`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(404);
 
       expect(res.body.error).toBe('VIDEO_NOT_FOUND');
