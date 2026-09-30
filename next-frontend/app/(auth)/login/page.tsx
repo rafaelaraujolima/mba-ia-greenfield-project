@@ -1,3 +1,5 @@
+import { Suspense } from "react"
+
 import { AuthFooter } from "@/components/auth/auth-footer"
 import { BrandLogo } from "@/components/auth/brand-logo"
 import { LoginForm } from "@/components/auth/login-form"
@@ -11,7 +13,9 @@ export default function LoginPage() {
 
         <h1 className="text-h1 text-foreground text-center">Sign in</h1>
 
-        <LoginForm className="w-full" />
+        <Suspense>
+          <LoginForm className="w-full" />
+        </Suspense>
 
         <AuthFooter
           question="Don't have an account?"

@@ -55,3 +55,53 @@ export type RefreshTokenPair =
 // Shared error envelope (all auth 4xx responses)
 export type ApiErrorEnvelope =
   paths["/auth/register"]["post"]["responses"][400]["content"]["application/json"];
+
+// ─── Channels ─────────────────────────────────────────────────────────────────
+
+// Channel: upstream GET /channels/me 200 body — consumed by the login BFF
+// (phase-04-frontend-contract-gaps/TD-01) to populate channelId/channelSlug
+// in the session with the just-issued access token.
+export type Channel =
+  paths["/channels/me"]["get"]["responses"][200]["content"]["application/json"];
+
+// PublicChannel: upstream GET /channels/{nickname} 200 body — anonymous public
+// channel page header (SI-04.35b). No `updatedAt` on this projection.
+export type PublicChannel =
+  paths["/channels/{nickname}"]["get"]["responses"][200]["content"]["application/json"];
+
+export type UpdateChannelDto =
+  paths["/channels/{id}"]["patch"]["requestBody"]["content"]["application/json"];
+
+export type UpdateChannelResponse =
+  paths["/channels/{id}"]["patch"]["responses"][200]["content"]["application/json"];
+
+// ChannelVideoList: public channel page listing (ready, public, published only).
+export type ChannelVideoList =
+  paths["/channels/{nickname}/videos"]["get"]["responses"][200]["content"]["application/json"];
+
+// ManageVideoList: management-panel listing (any status/visibility, owner-only).
+export type ManageVideoList =
+  paths["/channels/{id}/manage/videos"]["get"]["responses"][200]["content"]["application/json"];
+
+// ─── Videos ───────────────────────────────────────────────────────────────────
+
+export type Video =
+  paths["/videos/{id}"]["get"]["responses"][200]["content"]["application/json"];
+
+export type UpdateVideoDto =
+  paths["/videos/{id}"]["patch"]["requestBody"]["content"]["application/json"];
+
+export type UpdateVideoResponse =
+  paths["/videos/{id}"]["patch"]["responses"][200]["content"]["application/json"];
+
+export type UploadThumbnailResponse =
+  paths["/videos/{id}/thumbnail"]["post"]["responses"][200]["content"]["application/json"];
+
+export type PublishVideoResponse =
+  paths["/videos/{id}/publish"]["post"]["responses"][200]["content"]["application/json"];
+
+// ─── Categories ───────────────────────────────────────────────────────────────
+
+// Category: single element of the GET /categories array response.
+export type Category =
+  paths["/categories"]["get"]["responses"][200]["content"]["application/json"][number];
