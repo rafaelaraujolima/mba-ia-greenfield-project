@@ -100,6 +100,10 @@ export type UploadThumbnailResponse =
 export type PublishVideoResponse =
   paths["/videos/{id}/publish"]["post"]["responses"][200]["content"]["application/json"];
 
+// VideoSuggestions: GET /videos/{id}/suggestions 200 body (video-watch-page/TD-03).
+export type VideoSuggestions =
+  paths["/videos/{id}/suggestions"]["get"]["responses"][200]["content"]["application/json"];
+
 // ─── Categories ───────────────────────────────────────────────────────────────
 
 // Category: single element of the GET /categories array response.

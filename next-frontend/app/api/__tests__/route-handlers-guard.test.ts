@@ -14,13 +14,22 @@ import { join, relative } from "node:path";
  * - `GET /api/auth/refresh` (doesn't require an input session; also outside
  *   the videos/channels directories this sweep scans).
  *
+ * `ANONYMOUS_MUTATION_EXEMPTIONS` below is the escape hatch for a *mutation*
+ * method that is intentionally anonymous — the sweep still runs for these
+ * files, it just doesn't flag the listed method:
+ * - `POST /api/videos/[id]/views` (SI-05.4, video-watch-page/TD-02/TD-06):
+ *   anonymous view-count registration, same `@Public()` contract as the
+ *   backend endpoint it forwards to; client identity for dedup is the
+ *   request IP, not a session.
+ *
  * The sweep scans whatever is on disk under `app/api/videos/**` and
  * `app/api/channels/**` as screen-wiring SIs add real handlers (the first,
  * `GET /api/videos/[id]/thumbnail`, landed in SI-04.32b — a documented
  * exception per above, not a mutation handler). The `findUnguardedMutationHandlers`
  * logic is unit-tested against in-memory fixtures further down so the sweep
  * is provably falsifiable: it fails if a matching real mutation handler is
- * ever added without calling `requireSession()`.
+ * ever added without calling `requireSession()` or being added here with a
+ * justification comment.
  */
 
 const MUTATION_METHODS = ["POST", "PUT", "PATCH", "DELETE"] as const;
@@ -33,6 +42,16 @@ function isMutationMethod(method: string): method is MutationMethod {
 interface Violation {
   file: string;
   method: string;
+}
+
+const ANONYMOUS_MUTATION_EXEMPTIONS: readonly Violation[] = [
+  { file: "videos/[id]/views/route.ts", method: "POST" },
+];
+
+function isExempt(file: string, method: string): boolean {
+  return ANONYMOUS_MUTATION_EXEMPTIONS.some(
+    (e) => e.file === file && e.method === method
+  );
 }
 
 const EXPORT_PATTERN =
@@ -60,7 +79,10 @@ export function findUnguardedMutationHandlers(
         i + 1 < matches.length ? matches[i + 1].index : content.length;
       const body = content.slice(match.index, bodyEnd);
 
-      if (!body.includes("requireSession(")) {
+      if (
+        !body.includes("requireSession(") &&
+        !isExempt(file, match.method)
+      ) {
         violations.push({ file, method: match.method });
       }
     });
@@ -153,6 +175,18 @@ describe("findUnguardedMutationHandlers (sweep logic, fixture-based)", () => {
     expect(violations).toEqual([
       { file: "videos/[id]/route.ts", method: "DELETE" },
     ]);
+  });
+
+  it("does not flag an exempted anonymous mutation handler", () => {
+    const violations = findUnguardedMutationHandlers({
+      "videos/[id]/views/route.ts": `
+        export async function POST(request: Request) {
+          return new Response(null, { status: 204 });
+        }
+      `,
+    });
+
+    expect(violations).toEqual([]);
   });
 
   it("supports the const-arrow export form", () => {

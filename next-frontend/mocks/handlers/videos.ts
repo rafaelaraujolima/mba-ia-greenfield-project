@@ -6,10 +6,11 @@ import type {
   UpdateVideoResponse,
   UploadThumbnailResponse,
   Video,
+  VideoSuggestions,
 } from "@/lib/api/contracts";
 import { env } from "@/lib/env";
 
-import { buildVideo } from "../factories/video";
+import { buildVideo, buildVideoSuggestionItem } from "../factories/video";
 
 // Reserved trigger table (shared with E2E — trigger values must not collide
 // with other domains' fixture values, e.g. mocks/handlers/auth.ts's emails).
@@ -167,6 +168,56 @@ export const handlers = [
       headers: {
         Location: `https://fixture-storage.example.com/thumbnails/${id}.jpg`,
         "Cache-Control": "private, max-age=60",
+      },
+    });
+  }),
+
+  // POST /videos/:id/views
+  http.post(`${env.API_URL}/videos/:id/views`, ({ params }) => {
+    const id = params.id as string;
+
+    if (id === VIDEO_NOT_FOUND_ID) {
+      return HttpResponse.json(
+        errorEnvelope(404, "VIDEO_NOT_FOUND", "Video not found"),
+        { status: 404 }
+      );
+    }
+
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  // GET /videos/:id/suggestions
+  http.get(`${env.API_URL}/videos/:id/suggestions`, ({ params }) => {
+    const id = params.id as string;
+
+    if (id === VIDEO_NOT_FOUND_ID) {
+      return HttpResponse.json(
+        errorEnvelope(404, "VIDEO_NOT_FOUND", "Video not found"),
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json<VideoSuggestions>(
+      { items: [buildVideoSuggestionItem()] },
+      { status: 200 }
+    );
+  }),
+
+  // GET /videos/:id/download — 302 redirect to a pre-signed attachment URL
+  http.get(`${env.API_URL}/videos/:id/download`, ({ params }) => {
+    const id = params.id as string;
+
+    if (id === VIDEO_NOT_FOUND_ID) {
+      return HttpResponse.json(
+        errorEnvelope(404, "VIDEO_NOT_FOUND", "Video not found"),
+        { status: 404 }
+      );
+    }
+
+    return new HttpResponse(null, {
+      status: 302,
+      headers: {
+        Location: `https://fixture-storage.example.com/videos/${id}/original.mp4?response-content-disposition=attachment`,
       },
     });
   }),

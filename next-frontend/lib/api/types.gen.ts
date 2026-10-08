@@ -488,6 +488,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/videos/{id}/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a view
+         * @description Registers a view for the video, deduplicated per client via a short-lived Redis key (~30min window).
+         */
+        post: operations["VideosController_registerView"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/videos/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get related video suggestions
+         * @description Returns public videos from the same category as the given video, falling back to general public videos when the category has too few.
+         */
+        get: operations["VideosController_getSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1413,6 +1453,9 @@ export interface operations {
                         /** Format: date-time */
                         publishedAt?: string | null;
                         thumbnailKey?: string | null;
+                        viewCount?: number;
+                        channelName?: string;
+                        channelNickname?: string;
                         /** Format: date-time */
                         createdAt?: string;
                         /** Format: date-time */
@@ -1661,17 +1704,8 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Video not found */
+            /** @description Video not found, or not visible to the requester */
             404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiErrorEnvelope"];
-                };
-            };
-            /** @description Video is not ready */
-            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1699,7 +1733,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Video not found */
+            /** @description Video not found, or not visible to the requester */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -1708,8 +1742,71 @@ export interface operations {
                     "application/json": components["schemas"]["ApiErrorEnvelope"];
                 };
             };
-            /** @description Video is not ready */
-            409: {
+        };
+    };
+    VideosController_registerView: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description View registered (or deduplicated) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Video not found, or not visible to the requester */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    VideosController_getSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Suggested videos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: {
+                            /** Format: uuid */
+                            id?: string;
+                            title?: string;
+                            thumbnailUrl?: string | null;
+                            channelName?: string;
+                            channelNickname?: string;
+                            viewCount?: number;
+                            /** Format: date-time */
+                            publishedAt?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Source video not found, or not visible to the requester */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
