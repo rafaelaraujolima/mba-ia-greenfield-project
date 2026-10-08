@@ -1,7 +1,13 @@
-import type { ChannelVideoList, ManageVideoList, Video } from "@/lib/api/contracts";
+import type {
+  ChannelVideoList,
+  ManageVideoList,
+  Video,
+  VideoSuggestions,
+} from "@/lib/api/contracts";
 
 type ManageVideoListItem = NonNullable<ManageVideoList["items"]>[number];
 type ChannelVideoListItem = NonNullable<ChannelVideoList["items"]>[number];
+type VideoSuggestionItem = NonNullable<VideoSuggestions["items"]>[number];
 
 const baseVideo: Video = {
   id: "video-fixture-id",
@@ -15,6 +21,9 @@ const baseVideo: Video = {
   height: 1080,
   publishedAt: "2026-01-01T00:00:00.000Z",
   thumbnailKey: "thumbnails/video-fixture-id.jpg",
+  viewCount: 0,
+  channelName: "Fixture Channel",
+  channelNickname: "fixture-channel",
   createdAt: "2025-12-31T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
@@ -57,5 +66,22 @@ export const buildChannelVideoListItem = (
   overrides: Partial<ChannelVideoListItem> = {}
 ): ChannelVideoListItem => ({
   ...baseChannelVideoListItem,
+  ...overrides,
+});
+
+const baseVideoSuggestionItem: VideoSuggestionItem = {
+  id: "video-fixture-id",
+  title: "Fixture Video Title",
+  thumbnailUrl: "https://fixture-storage.example.com/thumbnails/video-fixture-id.jpg",
+  channelName: "Fixture Channel",
+  channelNickname: "fixture-channel",
+  viewCount: 0,
+  publishedAt: "2026-01-01T00:00:00.000Z",
+};
+
+export const buildVideoSuggestionItem = (
+  overrides: Partial<VideoSuggestionItem> = {}
+): VideoSuggestionItem => ({
+  ...baseVideoSuggestionItem,
   ...overrides,
 });
