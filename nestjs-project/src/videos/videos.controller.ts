@@ -10,9 +10,11 @@ import {
   Post,
   Query,
   Redirect,
+  Req,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
@@ -29,6 +31,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 import { CompleteUploadDto } from './dto/complete-upload.dto';
 import { CreateVideoDto } from './dto/create-video.dto';
+import { GetSuggestionsDto } from './dto/get-suggestions.dto';
 import { ListChannelVideosDto } from './dto/list-channel-videos.dto';
 import { RequestUploadPartsDto } from './dto/request-upload-parts.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
@@ -370,6 +373,9 @@ export class VideosController {
           nullable: true,
         },
         thumbnailKey: { type: 'string', nullable: true },
+        viewCount: { type: 'number' },
+        channelName: { type: 'string' },
+        channelNickname: { type: 'string' },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
       },
@@ -395,10 +401,14 @@ export class VideosController {
     height: number | null;
     publishedAt: string | null;
     thumbnailKey: string | null;
+    viewCount: number;
+    channelName: string;
+    channelNickname: string;
     createdAt: string;
     updatedAt: string;
   }> {
     const video = await this.videosService.findOne(id, user?.sub);
+    const viewCount = await this.videosService.getViewCount(id);
     return {
       id: video.id,
       title: video.title,
@@ -412,6 +422,9 @@ export class VideosController {
       height: video.height,
       publishedAt: video.published_at ? video.published_at.toISOString() : null,
       thumbnailKey: video.thumbnail_key,
+      viewCount,
+      channelName: video.channel.name,
+      channelNickname: video.channel.nickname,
       createdAt: video.created_at.toISOString(),
       updatedAt: video.updated_at.toISOString(),
     };
@@ -596,18 +609,18 @@ export class VideosController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Video not found',
-    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Video is not ready',
+    description: 'Video not found, or not visible to the requester',
     schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
   })
   async stream(
     @Param('id') id: string,
+    @CurrentUser() user: JwtPayload | undefined,
   ): Promise<{ url: string; statusCode: number }> {
-    const url = await this.videosService.getPlaybackUrl(id, 'inline');
+    const url = await this.videosService.getPlaybackUrl(
+      id,
+      'inline',
+      user?.sub,
+    );
     return { url, statusCode: HttpStatus.FOUND };
   }
 
@@ -625,18 +638,18 @@ export class VideosController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Video not found',
-    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
-  })
-  @ApiResponse({
-    status: 409,
-    description: 'Video is not ready',
+    description: 'Video not found, or not visible to the requester',
     schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
   })
   async download(
     @Param('id') id: string,
+    @CurrentUser() user: JwtPayload | undefined,
   ): Promise<{ url: string; statusCode: number }> {
-    const url = await this.videosService.getPlaybackUrl(id, 'attachment');
+    const url = await this.videosService.getPlaybackUrl(
+      id,
+      'attachment',
+      user?.sub,
+    );
     return { url, statusCode: HttpStatus.FOUND };
   }
 
@@ -665,5 +678,94 @@ export class VideosController {
   ): Promise<{ url: string; statusCode: number }> {
     const url = await this.videosService.getThumbnailUrl(id, user?.sub);
     return { url, statusCode: HttpStatus.FOUND };
+  }
+
+  @Post('videos/:id/views')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Public()
+  @ApiOperation({
+    summary: 'Register a view',
+    description:
+      'Registers a view for the video, deduplicated per client via a short-lived Redis key (~30min window).',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'View registered (or deduplicated)',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found, or not visible to the requester',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async registerView(
+    @Param('id') id: string,
+    @Req() req: Request,
+  ): Promise<void> {
+    await this.videosService.registerView(id, req.ip ?? 'unknown');
+  }
+
+  @Get('videos/:id/suggestions')
+  @Public()
+  @ApiOperation({
+    summary: 'Get related video suggestions',
+    description:
+      'Returns public videos from the same category as the given video, falling back to general public videos when the category has too few.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Suggested videos',
+    schema: {
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            properties: {
+              id: { type: 'string', format: 'uuid' },
+              title: { type: 'string' },
+              thumbnailUrl: { type: 'string', nullable: true },
+              channelName: { type: 'string' },
+              channelNickname: { type: 'string' },
+              viewCount: { type: 'number' },
+              publishedAt: { type: 'string', format: 'date-time' },
+            },
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Source video not found, or not visible to the requester',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async getSuggestions(
+    @Param('id') id: string,
+    @Query() query: GetSuggestionsDto,
+  ): Promise<{
+    items: {
+      id: string;
+      title: string;
+      thumbnailUrl: string | null;
+      channelName: string;
+      channelNickname: string;
+      viewCount: number;
+      publishedAt: string;
+    }[];
+  }> {
+    const videos = await this.videosService.getSuggestions(id, query.limit);
+    const items = await Promise.all(
+      videos.map(async (video) => ({
+        id: video.id,
+        title: video.title,
+        thumbnailUrl: video.thumbnail_key
+          ? await this.videosService.getThumbnailUrl(video.id)
+          : null,
+        channelName: video.channel.name,
+        channelNickname: video.channel.nickname,
+        viewCount: await this.videosService.getViewCount(video.id),
+        publishedAt: video.published_at!.toISOString(),
+      })),
+    );
+    return { items };
   }
 }

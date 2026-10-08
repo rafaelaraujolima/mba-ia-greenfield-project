@@ -1269,6 +1269,15 @@
                       "type": "string",
                       "nullable": true
                     },
+                    "viewCount": {
+                      "type": "number"
+                    },
+                    "channelName": {
+                      "type": "string"
+                    },
+                    "channelNickname": {
+                      "type": "string"
+                    },
                     "createdAt": {
                       "type": "string",
                       "format": "date-time"
@@ -1630,17 +1639,7 @@
             "description": "Redirect to a pre-signed read URL"
           },
           "404": {
-            "description": "Video not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Video is not ready",
+            "description": "Video not found, or not visible to the requester",
             "content": {
               "application/json": {
                 "schema": {
@@ -1675,17 +1674,7 @@
             "description": "Redirect to a pre-signed download URL"
           },
           "404": {
-            "description": "Video not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Video is not ready",
+            "description": "Video not found, or not visible to the requester",
             "content": {
               "application/json": {
                 "schema": {
@@ -1696,6 +1685,115 @@
           }
         },
         "summary": "Download a video",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/videos/{id}/views": {
+      "post": {
+        "description": "Registers a view for the video, deduplicated per client via a short-lived Redis key (~30min window).",
+        "operationId": "VideosController_registerView",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "View registered (or deduplicated)"
+          },
+          "404": {
+            "description": "Video not found, or not visible to the requester",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Register a view",
+        "tags": [
+          "videos"
+        ]
+      }
+    },
+    "/videos/{id}/suggestions": {
+      "get": {
+        "description": "Returns public videos from the same category as the given video, falling back to general public videos when the category has too few.",
+        "operationId": "VideosController_getSuggestions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Suggested videos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "thumbnailUrl": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "channelName": {
+                            "type": "string"
+                          },
+                          "channelNickname": {
+                            "type": "string"
+                          },
+                          "viewCount": {
+                            "type": "number"
+                          },
+                          "publishedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Source video not found, or not visible to the requester",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Get related video suggestions",
         "tags": [
           "videos"
         ]

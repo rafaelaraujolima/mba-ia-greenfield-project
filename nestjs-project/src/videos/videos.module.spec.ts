@@ -6,6 +6,7 @@ import { Category } from '../categories/entities/category.entity';
 import { Channel } from '../channels/entities/channel.entity';
 import { User } from '../users/entities/user.entity';
 import storageConfig from '../config/storage.config';
+import queueConfig from '../config/queue.config';
 import { createTestDataSource } from '../test/create-test-data-source';
 import { Video } from './entities/video.entity';
 import { VideosModule } from './videos.module';
@@ -16,7 +17,7 @@ describe('VideosModule', () => {
   it('should compile with TypeOrmModule.forFeature([Video]), ChannelsModule, StorageModule, and the video-processing queue', async () => {
     const module = await Test.createTestingModule({
       imports: [
-        ConfigModule.forRoot({ isGlobal: true, load: [storageConfig] }),
+        ConfigModule.forRoot({ isGlobal: true, load: [storageConfig, queueConfig] }),
         TypeOrmModule.forRoot(createTestDataSource(ALL_ENTITIES).options),
         BullModule.forRoot({ connection: { host: 'redis', port: 6379 } }),
         VideosModule,
