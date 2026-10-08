@@ -63,6 +63,15 @@ function makeQueue(overrides: Record<string, jest.Mock> = {}): any {
   };
 }
 
+function makeRedisClient(overrides: Record<string, jest.Mock> = {}): any {
+  return {
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue('OK'),
+    incr: jest.fn().mockResolvedValue(1),
+    ...overrides,
+  };
+}
+
 const storageConfig = { bucket: 'streamtube' } as any;
 
 describe('VideosService', () => {
@@ -85,6 +94,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -106,6 +116,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -127,6 +138,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -155,6 +167,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const video = await service.initiateUpload('channel-id', 'user-id', dto);
@@ -187,6 +200,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -210,6 +224,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -233,6 +248,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -256,6 +272,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -279,6 +296,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -302,6 +320,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -336,6 +355,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -364,6 +384,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -395,6 +416,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         queue,
+        makeRedisClient(),
       );
 
       const result = await service.completeUpload('video-id', 'user-id', dto);
@@ -422,6 +444,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(service.findOne('video-id')).rejects.toThrow(
@@ -429,10 +452,12 @@ describe('VideosService', () => {
       );
     });
 
-    it('returns a ready video to an anonymous requester', async () => {
+    it('returns a ready, published, public video to an anonymous requester', async () => {
       const readyVideo = {
         id: 'video-id',
         status: VideoStatus.READY,
+        visibility: VideoVisibility.PUBLIC,
+        published_at: new Date('2026-01-01T00:00:00Z'),
         channel: { user_id: 'owner-id' },
       };
       const videoRepository = makeVideoRepository({
@@ -446,10 +471,64 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const result = await service.findOne('video-id');
       expect(result).toBe(readyVideo);
+    });
+
+    it('returns a ready, published, unlisted video to an anonymous requester', async () => {
+      const unlistedVideo = {
+        id: 'video-id',
+        status: VideoStatus.READY,
+        visibility: VideoVisibility.UNLISTED,
+        published_at: new Date('2026-01-01T00:00:00Z'),
+        channel: { user_id: 'owner-id' },
+      };
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(unlistedVideo),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      const result = await service.findOne('video-id');
+      expect(result).toBe(unlistedVideo);
+    });
+
+    it('throws VideoNotFoundException for a ready but unpublished (published_at null) video accessed anonymously', async () => {
+      const unpublishedVideo = {
+        id: 'video-id',
+        status: VideoStatus.READY,
+        visibility: VideoVisibility.PUBLIC,
+        published_at: null,
+        channel: { user_id: 'owner-id' },
+      };
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(unpublishedVideo),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      await expect(service.findOne('video-id')).rejects.toThrow(
+        VideoNotFoundException,
+      );
     });
 
     it('throws VideoNotFoundException for a non-ready video accessed by a non-owner', async () => {
@@ -469,6 +548,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(service.findOne('video-id', 'other-user')).rejects.toThrow(
@@ -496,6 +576,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const result = await service.findOne('video-id', 'owner-id');
@@ -518,6 +599,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(service.update('video-id', 'user-id', dto)).rejects.toThrow(
@@ -540,6 +622,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(service.update('video-id', 'user-id', dto)).rejects.toThrow(
@@ -565,6 +648,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -598,6 +682,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const result = await service.update('video-id', 'user-id', {
@@ -631,6 +716,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -651,6 +737,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -677,6 +764,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -703,6 +791,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const result = await service.updateThumbnail(
@@ -734,6 +823,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(service.publish('video-id', 'user-id')).rejects.toThrow(
@@ -758,6 +848,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(service.publish('video-id', 'user-id')).rejects.toThrow(
@@ -782,6 +873,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(service.publish('video-id', 'user-id')).rejects.toThrow(
@@ -807,6 +899,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const result = await service.publish('video-id', 'user-id');
@@ -825,6 +918,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -845,6 +939,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -866,6 +961,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const result = await service.findByChannel('channel-id', 'user-id', {
@@ -893,6 +989,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const result = await service.findByChannel('channel-id', 'user-id', {});
@@ -908,7 +1005,7 @@ describe('VideosService', () => {
   describe('getPlaybackUrl', () => {
     it('throws VideoNotFoundException when the video does not exist', async () => {
       const videoRepository = makeVideoRepository({
-        findOneBy: jest.fn().mockResolvedValue(null),
+        findOne: jest.fn().mockResolvedValue(null),
       });
       const service = new VideosService(
         videoRepository,
@@ -918,6 +1015,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
@@ -925,14 +1023,17 @@ describe('VideosService', () => {
       ).rejects.toThrow(VideoNotFoundException);
     });
 
-    it('signs the URL with S3_PRESIGN_CLIENT rather than S3_CLIENT', async () => {
+    it('signs the URL with S3_PRESIGN_CLIENT rather than S3_CLIENT for a ready, published, public video', async () => {
       const video = {
         id: 'video-id',
         status: VideoStatus.READY,
+        visibility: VideoVisibility.PUBLIC,
+        published_at: new Date('2026-01-01T00:00:00Z'),
         storage_key: 'videos/video-id/original.mp4',
+        channel: { user_id: 'owner-id' },
       };
       const videoRepository = makeVideoRepository({
-        findOneBy: jest.fn().mockResolvedValue(video),
+        findOne: jest.fn().mockResolvedValue(video),
       });
       const s3Client = makeS3Client();
       const s3PresignClient = makeS3Client();
@@ -948,6 +1049,7 @@ describe('VideosService', () => {
         s3PresignClient,
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       const url = await service.getPlaybackUrl('video-id', 'inline');
@@ -967,11 +1069,13 @@ describe('VideosService', () => {
       getSignedUrlMock.mockReset();
     });
 
-    it('throws InvalidVideoStateException when the video is not ready', async () => {
+    it('throws VideoNotFoundException for a non-ready video accessed anonymously', async () => {
       const videoRepository = makeVideoRepository({
-        findOneBy: jest
-          .fn()
-          .mockResolvedValue({ id: 'video-id', status: VideoStatus.DRAFT }),
+        findOne: jest.fn().mockResolvedValue({
+          id: 'video-id',
+          status: VideoStatus.DRAFT,
+          channel: { user_id: 'owner-id' },
+        }),
       });
       const service = new VideosService(
         videoRepository,
@@ -981,11 +1085,289 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
 
       await expect(
         service.getPlaybackUrl('video-id', 'inline'),
-      ).rejects.toThrow(InvalidVideoStateException);
+      ).rejects.toThrow(VideoNotFoundException);
+    });
+
+    it('throws VideoNotFoundException for a private (visibility outside public/unlisted) video accessed anonymously', async () => {
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue({
+          id: 'video-id',
+          status: VideoStatus.READY,
+          visibility: 'private',
+          published_at: new Date('2026-01-01T00:00:00Z'),
+          channel: { user_id: 'owner-id' },
+        }),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      await expect(
+        service.getPlaybackUrl('video-id', 'inline'),
+      ).rejects.toThrow(VideoNotFoundException);
+    });
+
+    it('allows the owner to get a playback URL for a draft video', async () => {
+      const video = {
+        id: 'video-id',
+        status: VideoStatus.DRAFT,
+        storage_key: 'videos/video-id/original.mp4',
+        channel: { user_id: 'owner-id' },
+      };
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(video),
+      });
+      const getSignedUrlMock = getSignedUrl as jest.Mock;
+      getSignedUrlMock.mockResolvedValue('https://signed.example/owner');
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      const url = await service.getPlaybackUrl(
+        'video-id',
+        'inline',
+        'owner-id',
+      );
+
+      expect(url).toBe('https://signed.example/owner');
+      getSignedUrlMock.mockReset();
+    });
+  });
+
+  describe('getViewCount', () => {
+    it('returns 0 when the Redis key does not exist', async () => {
+      const redisClient = makeRedisClient({
+        get: jest.fn().mockResolvedValue(null),
+      });
+      const service = new VideosService(
+        makeVideoRepository(),
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        redisClient,
+      );
+
+      const count = await service.getViewCount('video-id');
+
+      expect(count).toBe(0);
+      expect(redisClient.get).toHaveBeenCalledWith('views:video-id');
+    });
+
+    it('returns the parsed counter value when the Redis key exists', async () => {
+      const redisClient = makeRedisClient({
+        get: jest.fn().mockResolvedValue('42'),
+      });
+      const service = new VideosService(
+        makeVideoRepository(),
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        redisClient,
+      );
+
+      const count = await service.getViewCount('video-id');
+
+      expect(count).toBe(42);
+    });
+  });
+
+  describe('registerView', () => {
+    const readyPublicVideo = {
+      id: 'video-id',
+      status: VideoStatus.READY,
+      visibility: VideoVisibility.PUBLIC,
+      published_at: new Date('2026-01-01T00:00:00Z'),
+      channel: { user_id: 'owner-id' },
+    };
+
+    it('throws VideoNotFoundException when the video is not visible anonymously', async () => {
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue({
+          ...readyPublicVideo,
+          status: VideoStatus.DRAFT,
+        }),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      await expect(
+        service.registerView('video-id', '203.0.113.1'),
+      ).rejects.toThrow(VideoNotFoundException);
+    });
+
+    it('increments the counter on the first view from a client', async () => {
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(readyPublicVideo),
+      });
+      const redisClient = makeRedisClient({
+        set: jest.fn().mockResolvedValue('OK'),
+        incr: jest.fn().mockResolvedValue(1),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        redisClient,
+      );
+
+      await service.registerView('video-id', '203.0.113.1');
+
+      expect(redisClient.set).toHaveBeenCalledWith(
+        'view:video-id:203.0.113.1',
+        '1',
+        'EX',
+        1800,
+        'NX',
+      );
+      expect(redisClient.incr).toHaveBeenCalledWith('views:video-id');
+    });
+
+    it('does not increment the counter on a repeated view within the dedup window', async () => {
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(readyPublicVideo),
+      });
+      const redisClient = makeRedisClient({
+        set: jest.fn().mockResolvedValue(null),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        redisClient,
+      );
+
+      await service.registerView('video-id', '203.0.113.1');
+
+      expect(redisClient.incr).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getSuggestions', () => {
+    const sourceVideo = {
+      id: 'video-id',
+      category_id: 'category-id',
+      status: VideoStatus.READY,
+      visibility: VideoVisibility.PUBLIC,
+      published_at: new Date('2026-01-01T00:00:00Z'),
+      channel: { user_id: 'owner-id' },
+    };
+
+    it('throws VideoNotFoundException when the source video is not visible anonymously', async () => {
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(null),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      await expect(service.getSuggestions('video-id')).rejects.toThrow(
+        VideoNotFoundException,
+      );
+    });
+
+    it('returns same-category videos first, up to the limit', async () => {
+      const sameCategory = [
+        { id: 'v1' },
+        { id: 'v2' },
+        { id: 'v3' },
+        { id: 'v4' },
+        { id: 'v5' },
+      ];
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(sourceVideo),
+        find: jest.fn().mockResolvedValue(sameCategory),
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      const result = await service.getSuggestions('video-id', 5);
+
+      expect(result).toEqual(sameCategory);
+      expect(videoRepository.find).toHaveBeenCalledTimes(1);
+    });
+
+    it('completes with general public videos when the category has fewer than the limit', async () => {
+      const sameCategory = [{ id: 'v1' }, { id: 'v2' }];
+      const fallback = [{ id: 'v3' }, { id: 'v4' }, { id: 'v5' }];
+      const findMock = jest
+        .fn()
+        .mockResolvedValueOnce(sameCategory)
+        .mockResolvedValueOnce(fallback);
+      const videoRepository = makeVideoRepository({
+        findOne: jest.fn().mockResolvedValue(sourceVideo),
+        find: findMock,
+      });
+      const service = new VideosService(
+        videoRepository,
+        makeChannelsService(),
+        makeCategoriesService(),
+        makeS3Client(),
+        makeS3Client(),
+        storageConfig,
+        makeQueue(),
+        makeRedisClient(),
+      );
+
+      const result = await service.getSuggestions('video-id', 5);
+
+      expect(result).toEqual([...sameCategory, ...fallback]);
+      expect(findMock).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -1002,6 +1384,7 @@ describe('VideosService', () => {
         makeS3Client(),
         storageConfig,
         makeQueue(),
+        makeRedisClient(),
       );
     }
 

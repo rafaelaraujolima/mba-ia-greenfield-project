@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CategoriesModule } from '../categories/categories.module';
 import { ChannelsModule } from '../channels/channels.module';
 import { StorageModule } from '../storage/storage.module';
+import { RedisModule } from '../redis/redis.module';
 import { UploadCleanupService } from './upload-cleanup.service';
 import { Video } from './entities/video.entity';
 import { VideoProcessor } from './video.processor';
@@ -17,6 +18,7 @@ import { VIDEO_PROCESSING_QUEUE } from './videos.constants';
     CategoriesModule,
     ChannelsModule,
     StorageModule,
+    RedisModule,
     BullModule.registerQueue({ name: VIDEO_PROCESSING_QUEUE }),
   ],
   controllers: [VideosController],

@@ -39,6 +39,7 @@ function VideoCard({
   durationSeconds,
   views,
   publishedAt,
+  layout = "default",
   ...props
 }: Omit<React.ComponentProps<typeof Link>, "href" | "children"> & {
   id: string
@@ -48,13 +49,17 @@ function VideoCard({
   durationSeconds?: number | null
   views?: number | null
   publishedAt?: string | null
+  layout?: "default" | "list"
 }) {
+  const isList = layout === "list"
+
   return (
     <Link
       href={`/watch/${id}`}
       aria-label={title}
       data-slot="video-card"
-      className={cn("flex w-64 flex-col gap-2", className)}
+      data-layout={layout}
+      className={cn(isList ? "flex w-full gap-2.5" : "flex w-64 flex-col gap-2", className)}
       {...props}
     >
       <VideoThumbnail
@@ -62,16 +67,27 @@ function VideoCard({
         version={thumbnailVersion}
         durationSeconds={durationSeconds}
         alt=""
-        className="aspect-video w-full"
+        className={isList ? "aspect-video w-40 shrink-0" : "aspect-video w-full"}
       />
-      <span className="line-clamp-2 text-body-lg text-foreground">{title}</span>
-      <span className="flex flex-col gap-0.5">
-        {channelName ? (
-          <span className="text-body-lg text-muted-foreground">{channelName}</span>
-        ) : null}
-        <span className="text-body-lg text-muted-foreground">
-          {formatViews(views)} views
-          {publishedAt ? ` • ${formatRelativeTime(publishedAt)}` : null}
+      <span className={cn("flex flex-col", isList ? "gap-1" : "gap-2")}>
+        <span
+          className={cn(
+            "line-clamp-2 text-foreground",
+            isList ? "text-body-md" : "text-body-lg"
+          )}
+        >
+          {title}
+        </span>
+        <span className="flex flex-col gap-0.5">
+          {channelName ? (
+            <span className={cn("text-muted-foreground", isList ? "text-caption" : "text-body-lg")}>
+              {channelName}
+            </span>
+          ) : null}
+          <span className={cn("text-muted-foreground", isList ? "text-caption" : "text-body-lg")}>
+            {formatViews(views)} views
+            {publishedAt ? ` • ${formatRelativeTime(publishedAt)}` : null}
+          </span>
         </span>
       </span>
     </Link>

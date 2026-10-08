@@ -8,6 +8,7 @@ import type { Queue } from 'bullmq';
 import { Category } from '../categories/entities/category.entity';
 import { Channel } from '../channels/entities/channel.entity';
 import storageConfig from '../config/storage.config';
+import queueConfig from '../config/queue.config';
 import {
   ChannelNotFoundException,
   ChannelNotOwnedException,
@@ -33,7 +34,7 @@ async function createVideosTestModule(): Promise<TestingModule> {
   const ds = createTestDataSource(ALL_ENTITIES);
   return Test.createTestingModule({
     imports: [
-      ConfigModule.forRoot({ isGlobal: true, load: [storageConfig] }),
+      ConfigModule.forRoot({ isGlobal: true, load: [storageConfig, queueConfig] }),
       TypeOrmModule.forRoot(ds.options),
       BullModule.forRoot({ connection: { host: 'redis', port: 6379 } }),
       VideosModule,
@@ -260,13 +261,14 @@ describe('VideosService (integration)', () => {
   });
 
   describe('getPlaybackUrl', () => {
-    it('generates a pre-signed inline URL for a ready video', async () => {
+    it('generates a pre-signed inline URL for a ready, published, public video', async () => {
       const { channel } = await createUserAndChannel();
       const video = await videoRepository.save(
         videoRepository.create({
           channel_id: channel.id,
           title: 'Ready video',
           status: VideoStatus.READY,
+          published_at: new Date(),
           storage_key: `videos/${channel.id}/original.mp4`,
         }),
       );
@@ -277,13 +279,14 @@ describe('VideosService (integration)', () => {
       expect(url).not.toContain('response-content-disposition');
     });
 
-    it('generates a pre-signed attachment URL for a ready video', async () => {
+    it('generates a pre-signed attachment URL for a ready, published, public video', async () => {
       const { channel } = await createUserAndChannel();
       const video = await videoRepository.save(
         videoRepository.create({
           channel_id: channel.id,
           title: 'Ready video',
           status: VideoStatus.READY,
+          published_at: new Date(),
           storage_key: `videos/${channel.id}/original.mp4`,
         }),
       );
@@ -293,7 +296,7 @@ describe('VideosService (integration)', () => {
       expect(url).toContain('response-content-disposition=attachment');
     });
 
-    it('throws InvalidVideoStateException for a non-ready video', async () => {
+    it('throws VideoNotFoundException for a non-ready video accessed anonymously', async () => {
       const { channel } = await createUserAndChannel();
       const video = await videoRepository.save(
         videoRepository.create({
@@ -306,7 +309,7 @@ describe('VideosService (integration)', () => {
 
       await expect(
         videosService.getPlaybackUrl(video.id, 'inline'),
-      ).rejects.toThrow(InvalidVideoStateException);
+      ).rejects.toThrow(VideoNotFoundException);
     });
 
     it('throws VideoNotFoundException for a non-existent video', async () => {

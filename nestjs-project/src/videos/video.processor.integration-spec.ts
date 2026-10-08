@@ -17,6 +17,7 @@ import {
 import type { Queue } from 'bullmq';
 import { Channel } from '../channels/entities/channel.entity';
 import storageConfig from '../config/storage.config';
+import queueConfig from '../config/queue.config';
 import {
   cleanAllTables,
   createTestDataSource,
@@ -35,7 +36,7 @@ async function createTestModule(): Promise<TestingModule> {
   const ds = createTestDataSource(ALL_ENTITIES);
   return Test.createTestingModule({
     imports: [
-      ConfigModule.forRoot({ isGlobal: true, load: [storageConfig] }),
+      ConfigModule.forRoot({ isGlobal: true, load: [storageConfig, queueConfig] }),
       TypeOrmModule.forRoot(ds.options),
       BullModule.forRoot({ connection: { host: 'redis', port: 6379 } }),
       VideosModule,

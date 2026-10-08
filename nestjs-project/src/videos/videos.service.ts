@@ -3,7 +3,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { ConfigType } from '@nestjs/config';
-import { IsNull, Not, Repository } from 'typeorm';
+import { In, IsNull, Not, Repository } from 'typeorm';
 import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
@@ -15,10 +15,12 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Queue } from 'bullmq';
+import type Redis from 'ioredis';
 import { CategoriesService } from '../categories/categories.service';
 import { ChannelsService } from '../channels/channels.service';
 import storageConfig from '../config/storage.config';
 import { S3_CLIENT, S3_PRESIGN_CLIENT } from '../storage/storage.constants';
+import { REDIS_CLIENT } from '../redis/redis.constants';
 import {
   CategoryNotFoundException,
   ChannelNotFoundException,
@@ -41,10 +43,14 @@ import type { VideoProcessJobData } from './video-process.types';
 import {
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
+  DEFAULT_SUGGESTIONS_LIMIT,
   MAX_THUMBNAIL_FILE_SIZE_BYTES,
   MAX_VIDEO_FILE_SIZE_BYTES,
   VIDEO_PROCESSING_QUEUE,
   VIDEO_PROCESS_JOB,
+  VIEW_COUNT_KEY_PREFIX,
+  VIEW_DEDUP_KEY_PREFIX,
+  VIEW_DEDUP_TTL_SECONDS,
 } from './videos.constants';
 
 const UPLOAD_PART_URL_EXPIRATION_SECONDS = 900;
@@ -80,6 +86,7 @@ export class VideosService {
     private readonly storage: ConfigType<typeof storageConfig>,
     @InjectQueue(VIDEO_PROCESSING_QUEUE)
     private readonly videoProcessingQueue: Queue<VideoProcessJobData>,
+    @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
   ) {}
 
   async initiateUpload(
@@ -203,12 +210,65 @@ export class VideosService {
     });
     if (!video) throw new VideoNotFoundException();
 
-    const isOwner = userId != null && video.channel.user_id === userId;
-    if (video.status !== VideoStatus.READY && !isOwner) {
-      throw new VideoNotFoundException();
-    }
+    this.assertViewable(video, userId);
 
     return video;
+  }
+
+  /**
+   * Unified anonymous-visibility rule (video-watch-page/TD-08): the owner sees
+   * the video in any status; anyone else (anonymous or not) only sees it when
+   * it is ready, published, and public/unlisted. Replaces the narrower
+   * `status === READY`-only checks previously duplicated across
+   * `findOne`/`getPlaybackUrl`, which leaked draft/private videos anonymously.
+   */
+  private assertViewable(video: Video, userId?: string): void {
+    const isOwner = userId != null && video.channel.user_id === userId;
+    if (isOwner) return;
+
+    const isVisibleToViewers =
+      video.status === VideoStatus.READY &&
+      video.published_at !== null &&
+      (video.visibility === VideoVisibility.PUBLIC ||
+        video.visibility === VideoVisibility.UNLISTED);
+    if (!isVisibleToViewers) {
+      throw new VideoNotFoundException();
+    }
+  }
+
+  async getViewCount(videoId: string): Promise<number> {
+    const count = await this.redisClient.get(
+      `${VIEW_COUNT_KEY_PREFIX}${videoId}`,
+    );
+    return count != null ? parseInt(count, 10) : 0;
+  }
+
+  /**
+   * Registers a view with per-client dedup (video-watch-page/TD-02): a Redis
+   * key with TTL marks the client as having counted a view for this video;
+   * while that key is alive, repeated calls from the same client don't
+   * increment the counter again.
+   */
+  async registerView(videoId: string, clientKey: string): Promise<void> {
+    const video = await this.videoRepository.findOne({
+      where: { id: videoId },
+      relations: ['channel'],
+    });
+    if (!video) throw new VideoNotFoundException();
+
+    this.assertViewable(video);
+
+    const dedupKey = `${VIEW_DEDUP_KEY_PREFIX}${videoId}:${clientKey}`;
+    const dedupSet = await this.redisClient.set(
+      dedupKey,
+      '1',
+      'EX',
+      VIEW_DEDUP_TTL_SECONDS,
+      'NX',
+    );
+    if (dedupSet === null) return;
+
+    await this.redisClient.incr(`${VIEW_COUNT_KEY_PREFIX}${videoId}`);
   }
 
   async update(
@@ -309,15 +369,69 @@ export class VideosService {
     return { items, page, pageSize, total };
   }
 
+  /**
+   * Sugestões de vídeos relacionados (video-watch-page/TD-03): prioriza
+   * vídeos públicos da mesma categoria do vídeo de origem; completa com
+   * vídeos públicos gerais quando a categoria não tem o suficiente.
+   */
+  async getSuggestions(
+    videoId: string,
+    limit: number = DEFAULT_SUGGESTIONS_LIMIT,
+  ): Promise<Video[]> {
+    const video = await this.videoRepository.findOne({
+      where: { id: videoId },
+      relations: ['channel'],
+    });
+    if (!video) throw new VideoNotFoundException();
+
+    this.assertViewable(video);
+
+    const sameCategory =
+      video.category_id != null
+        ? await this.videoRepository.find({
+            where: {
+              category_id: video.category_id,
+              status: VideoStatus.READY,
+              visibility: VideoVisibility.PUBLIC,
+              published_at: Not(IsNull()),
+              id: Not(video.id),
+            },
+            relations: ['channel'],
+            order: { published_at: 'DESC' },
+            take: limit,
+          })
+        : [];
+
+    if (sameCategory.length >= limit) return sameCategory;
+
+    const excludeIds = [video.id, ...sameCategory.map((v) => v.id)];
+    const fallback = await this.videoRepository.find({
+      where: {
+        status: VideoStatus.READY,
+        visibility: VideoVisibility.PUBLIC,
+        published_at: Not(IsNull()),
+        id: Not(In(excludeIds)),
+      },
+      relations: ['channel'],
+      order: { published_at: 'DESC' },
+      take: limit - sameCategory.length,
+    });
+
+    return [...sameCategory, ...fallback];
+  }
+
   async getPlaybackUrl(
     videoId: string,
     disposition: PlaybackDisposition,
+    userId?: string,
   ): Promise<string> {
-    const video = await this.videoRepository.findOneBy({ id: videoId });
+    const video = await this.videoRepository.findOne({
+      where: { id: videoId },
+      relations: ['channel'],
+    });
     if (!video) throw new VideoNotFoundException();
-    if (video.status !== VideoStatus.READY) {
-      throw new InvalidVideoStateException();
-    }
+
+    this.assertViewable(video, userId);
 
     return getSignedUrl(
       this.s3PresignClient,
