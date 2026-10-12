@@ -217,6 +217,8 @@ describe('Channels (e2e)', () => {
         name: channel.name,
         nickname: 'publicnick',
         description: 'A channel',
+        subscriberCount: 0,
+        viewerState: null,
       });
     });
 
