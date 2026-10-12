@@ -35,13 +35,20 @@ import { GetSuggestionsDto } from './dto/get-suggestions.dto';
 import { ListChannelVideosDto } from './dto/list-channel-videos.dto';
 import { RequestUploadPartsDto } from './dto/request-upload-parts.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
+import {
+  VideoSocialStatsService,
+  type VideoViewerState,
+} from './video-social-stats.service';
 import { VideosService } from './videos.service';
 import { THUMBNAIL_CACHE_CONTROL } from './videos.constants';
 
 @ApiTags('videos')
 @Controller()
 export class VideosController {
-  constructor(private readonly videosService: VideosService) {}
+  constructor(
+    private readonly videosService: VideosService,
+    private readonly videoSocialStats: VideoSocialStatsService,
+  ) {}
 
   @Post('channels/:channelId/videos')
   @ApiBearerAuth('access-token')
@@ -98,7 +105,7 @@ export class VideosController {
   @ApiOperation({
     summary: 'List channel videos (management panel)',
     description:
-      'Paginated listing of every video of a channel owned by the requester, regardless of status or visibility. views, likes and comments are placeholders until Phase 06.',
+      'Paginated listing of every video of a channel owned by the requester, regardless of status or visibility. likes and comments are the real counts (comments include replies); views is still a placeholder.',
   })
   @ApiResponse({
     status: 200,
@@ -153,6 +160,9 @@ export class VideosController {
     @Query() query: ListChannelVideosDto,
   ) {
     const result = await this.videosService.findByChannel(id, user.sub, query);
+    const counts = await this.videoSocialStats.countsForVideos(
+      result.items.map((video) => video.id),
+    );
     return {
       items: result.items.map((video) => ({
         id: video.id,
@@ -165,8 +175,8 @@ export class VideosController {
           : null,
         updatedAt: video.updated_at.toISOString(),
         views: 0,
-        likes: 0,
-        comments: 0,
+        likes: counts.likes.get(video.id) ?? 0,
+        comments: counts.comments.get(video.id) ?? 0,
       })),
       page: result.page,
       pageSize: result.pageSize,
@@ -376,6 +386,20 @@ export class VideosController {
         viewCount: { type: 'number' },
         channelName: { type: 'string' },
         channelNickname: { type: 'string' },
+        likeCount: { type: 'number' },
+        channelSubscriberCount: { type: 'number' },
+        viewerState: {
+          nullable: true,
+          properties: {
+            reaction: {
+              type: 'string',
+              enum: ['like', 'dislike'],
+              nullable: true,
+            },
+            subscribed: { type: 'boolean' },
+            isChannelOwner: { type: 'boolean' },
+          },
+        },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
       },
@@ -404,11 +428,15 @@ export class VideosController {
     viewCount: number;
     channelName: string;
     channelNickname: string;
+    likeCount: number;
+    channelSubscriberCount: number;
+    viewerState: VideoViewerState | null;
     createdAt: string;
     updatedAt: string;
   }> {
     const video = await this.videosService.findOne(id, user?.sub);
     const viewCount = await this.videosService.getViewCount(id);
+    const social = await this.videoSocialStats.forVideo(video, user?.sub);
     return {
       id: video.id,
       title: video.title,
@@ -425,6 +453,9 @@ export class VideosController {
       viewCount,
       channelName: video.channel.name,
       channelNickname: video.channel.nickname,
+      likeCount: social.likeCount,
+      channelSubscriberCount: social.channelSubscriberCount,
+      viewerState: social.viewerState,
       createdAt: video.created_at.toISOString(),
       updatedAt: video.updated_at.toISOString(),
     };

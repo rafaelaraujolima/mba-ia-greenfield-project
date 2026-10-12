@@ -8,6 +8,9 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { CategoriesModule } from './categories/categories.module';
 import { VideosModule } from './videos/videos.module';
+import { CommentsModule } from './comments/comments.module';
+import { ReactionsModule } from './reactions/reactions.module';
+import { SubscriptionsModule } from './subscriptions/subscriptions.module';
 import appConfig from './config/app.config';
 import authConfig from './config/auth.config';
 import databaseConfig from './config/database.config';
@@ -58,6 +61,9 @@ import { envValidationSchema } from './config/env.validation';
     AuthModule,
     CategoriesModule,
     VideosModule,
+    SubscriptionsModule,
+    ReactionsModule,
+    CommentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

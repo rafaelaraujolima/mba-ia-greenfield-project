@@ -118,3 +118,35 @@ export class ThumbnailSizeExceededException extends DomainException {
     );
   }
 }
+
+export class CannotSubscribeOwnChannelException extends DomainException {
+  constructor() {
+    super(
+      'CANNOT_SUBSCRIBE_OWN_CHANNEL',
+      403,
+      'Cannot subscribe to your own channel',
+    );
+  }
+}
+
+export class CommentNotFoundException extends DomainException {
+  constructor() {
+    super('COMMENT_NOT_FOUND', 404, 'Comment not found');
+  }
+}
+
+export class CommentDepthExceededException extends DomainException {
+  constructor() {
+    super(
+      'COMMENT_DEPTH_EXCEEDED',
+      400,
+      'Replies can only be made to top-level comments',
+    );
+  }
+}
+
+export class InvalidCursorException extends DomainException {
+  constructor() {
+    super('INVALID_CURSOR', 400, 'Pagination cursor is invalid');
+  }
+}

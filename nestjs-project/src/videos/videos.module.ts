@@ -3,12 +3,16 @@ import { BullModule } from '@nestjs/bullmq';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { CategoriesModule } from '../categories/categories.module';
 import { ChannelsModule } from '../channels/channels.module';
+import { CommentsModule } from '../comments/comments.module';
+import { ReactionsModule } from '../reactions/reactions.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { StorageModule } from '../storage/storage.module';
 import { RedisModule } from '../redis/redis.module';
 import { UploadCleanupService } from './upload-cleanup.service';
 import { Video } from './entities/video.entity';
 import { VideoProcessor } from './video.processor';
 import { VideosController } from './videos.controller';
+import { VideoSocialStatsService } from './video-social-stats.service';
 import { VideosService } from './videos.service';
 import { VIDEO_PROCESSING_QUEUE } from './videos.constants';
 
@@ -17,12 +21,20 @@ import { VIDEO_PROCESSING_QUEUE } from './videos.constants';
     TypeOrmModule.forFeature([Video]),
     CategoriesModule,
     ChannelsModule,
+    CommentsModule,
+    ReactionsModule,
+    SubscriptionsModule,
     StorageModule,
     RedisModule,
     BullModule.registerQueue({ name: VIDEO_PROCESSING_QUEUE }),
   ],
   controllers: [VideosController],
-  providers: [VideosService, VideoProcessor, UploadCleanupService],
+  providers: [
+    VideosService,
+    VideoSocialStatsService,
+    VideoProcessor,
+    UploadCleanupService,
+  ],
   exports: [TypeOrmModule, VideosService],
 })
 export class VideosModule {}

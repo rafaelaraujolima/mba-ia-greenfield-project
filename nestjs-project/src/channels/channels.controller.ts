@@ -12,12 +12,19 @@ import { Public } from '../auth/decorators/public.decorator';
 import { UpdateChannelDto } from './dto/update-channel.dto';
 import { ChannelNotFoundException } from '../common/exceptions/domain.exception';
 import { ApiErrorEnvelope } from '../common/openapi/api-error-envelope.dto';
+import {
+  ChannelSocialStatsService,
+  type ChannelViewerState,
+} from './channel-social-stats.service';
 import { ChannelsService } from './channels.service';
 
 @ApiTags('channels')
 @Controller('channels')
 export class ChannelsController {
-  constructor(private readonly channelsService: ChannelsService) {}
+  constructor(
+    private readonly channelsService: ChannelsService,
+    private readonly channelSocialStats: ChannelSocialStatsService,
+  ) {}
 
   @Patch(':id')
   @ApiBearerAuth('access-token')
@@ -142,6 +149,14 @@ export class ChannelsController {
         name: { type: 'string' },
         nickname: { type: 'string' },
         description: { type: 'string', nullable: true },
+        subscriberCount: { type: 'number' },
+        viewerState: {
+          nullable: true,
+          properties: {
+            subscribed: { type: 'boolean' },
+            isChannelOwner: { type: 'boolean' },
+          },
+        },
       },
     },
   })
@@ -150,19 +165,27 @@ export class ChannelsController {
     description: 'Channel not found',
     schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
   })
-  async findByNickname(@Param('nickname') nickname: string): Promise<{
+  async findByNickname(
+    @Param('nickname') nickname: string,
+    @CurrentUser() user?: JwtPayload,
+  ): Promise<{
     id: string;
     name: string;
     nickname: string;
     description: string | null;
+    subscriberCount: number;
+    viewerState: ChannelViewerState | null;
   }> {
     const channel = await this.channelsService.findByNickname(nickname);
     if (!channel) throw new ChannelNotFoundException();
+    const social = await this.channelSocialStats.forChannel(channel, user?.sub);
     return {
       id: channel.id,
       name: channel.name,
       nickname: channel.nickname,
       description: channel.description,
+      subscriberCount: social.subscriberCount,
+      viewerState: social.viewerState,
     };
   }
 }

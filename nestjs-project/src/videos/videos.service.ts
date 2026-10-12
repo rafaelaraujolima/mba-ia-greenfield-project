@@ -40,6 +40,7 @@ import { RequestUploadPartsDto } from './dto/request-upload-parts.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
 import { Video, VideoStatus, VideoVisibility } from './entities/video.entity';
 import type { VideoProcessJobData } from './video-process.types';
+import { isVideoVisibleTo } from './video-visibility.util';
 import {
   DEFAULT_PAGE,
   DEFAULT_PAGE_SIZE,
@@ -223,15 +224,7 @@ export class VideosService {
    * `findOne`/`getPlaybackUrl`, which leaked draft/private videos anonymously.
    */
   private assertViewable(video: Video, userId?: string): void {
-    const isOwner = userId != null && video.channel.user_id === userId;
-    if (isOwner) return;
-
-    const isVisibleToViewers =
-      video.status === VideoStatus.READY &&
-      video.published_at !== null &&
-      (video.visibility === VideoVisibility.PUBLIC ||
-        video.visibility === VideoVisibility.UNLISTED);
-    if (!isVisibleToViewers) {
+    if (!isVideoVisibleTo(video, userId)) {
       throw new VideoNotFoundException();
     }
   }

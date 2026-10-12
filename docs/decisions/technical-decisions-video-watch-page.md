@@ -166,6 +166,7 @@ _Subprojects in scope:_
 ---
 
 ## TD-06: Regra de acesso anônimo para a página de vídeo
+<!-- status: superseded-by: social-interactions/TD-06 -->
 
 **Scope:** Frontend
 

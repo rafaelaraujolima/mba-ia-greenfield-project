@@ -5,11 +5,16 @@ import { Category } from '../categories/entities/category.entity';
 import { RefreshToken } from '../auth/entities/refresh-token.entity';
 import { VerificationToken } from '../auth/entities/verification-token.entity';
 import { Video } from '../videos/entities/video.entity';
+import { Comment } from '../comments/entities/comment.entity';
+import { CommentReaction } from '../reactions/entities/comment-reaction.entity';
+import { VideoReaction } from '../reactions/entities/video-reaction.entity';
+import { Subscription } from '../subscriptions/entities/subscription.entity';
 import { CreateUsersAndChannels1775687773260 } from './migrations/1775687773260-CreateUsersAndChannels';
 import { CreateAuthTokens1777579850478 } from './migrations/1777579850478-CreateAuthTokens';
 import { CreateVideos1789992735808 } from './migrations/1789992735808-CreateVideos';
 import { CreateCategories1790121813965 } from './migrations/1790121813965-CreateCategories';
 import { AddVideoEditingColumns1790122198040 } from './migrations/1790122198040-AddVideoEditingColumns';
+import { CreateSocialInteractions1791581244930 } from './migrations/1791581244930-CreateSocialInteractions';
 import { createTestDataSource } from '../test/create-test-data-source';
 
 const MANAGED_TABLES = [
@@ -19,6 +24,10 @@ const MANAGED_TABLES = [
   'verification_tokens',
   'videos',
   'categories',
+  'comments',
+  'comment_reactions',
+  'video_reactions',
+  'subscriptions',
 ];
 
 describe('Database migrations (integration)', () => {
@@ -26,7 +35,18 @@ describe('Database migrations (integration)', () => {
 
   beforeAll(async () => {
     dataSource = createTestDataSource(
-      [User, Channel, RefreshToken, VerificationToken, Category, Video],
+      [
+        User,
+        Channel,
+        RefreshToken,
+        VerificationToken,
+        Category,
+        Video,
+        Comment,
+        CommentReaction,
+        VideoReaction,
+        Subscription,
+      ],
       {
         synchronize: false,
         migrations: [
@@ -35,6 +55,7 @@ describe('Database migrations (integration)', () => {
           CreateVideos1789992735808,
           CreateCategories1790121813965,
           AddVideoEditingColumns1790122198040,
+          CreateSocialInteractions1791581244930,
         ],
       },
     );
@@ -57,20 +78,21 @@ describe('Database migrations (integration)', () => {
     await dataSource.query(
       `DROP TYPE IF EXISTS "public"."videos_visibility_enum"`,
     );
+    await dataSource.query(`DROP TYPE IF EXISTS "public"."reaction_type"`);
   });
 
   afterAll(async () => {
-    // The second test undoes the last migration, leaving the video editing
-    // columns missing. Re-apply so the shared DB is fully migrated when
+    // The last two tests undo migrations, leaving the social tables and the
+    // video editing columns missing. Re-apply so the shared DB is fully migrated when
     // subsequent suites run.
     await dataSource.runMigrations();
     await dataSource.destroy();
   });
 
-  it('should apply all migrations and create all six tables', async () => {
+  it('should apply all migrations and create all ten tables', async () => {
     const ranMigrations = await dataSource.runMigrations();
 
-    expect(ranMigrations).toHaveLength(5);
+    expect(ranMigrations).toHaveLength(6);
 
     const result = await dataSource.query<{ table_name: string }[]>(
       `SELECT table_name FROM information_schema.tables
@@ -83,14 +105,35 @@ describe('Database migrations (integration)', () => {
     expect(tableNames).toEqual([
       'categories',
       'channels',
+      'comment_reactions',
+      'comments',
       'refresh_tokens',
+      'subscriptions',
       'users',
       'verification_tokens',
+      'video_reactions',
       'videos',
     ]);
   });
 
-  it('should revert the last migration and remove the video editing columns', async () => {
+  it('should revert the last migration and remove the social interaction tables and enum', async () => {
+    await dataSource.undoLastMigration();
+
+    const tables = await dataSource.query<{ table_name: string }[]>(
+      `SELECT table_name FROM information_schema.tables
+       WHERE table_schema = 'public'
+         AND table_name = ANY($1::text[])`,
+      [['comments', 'comment_reactions', 'video_reactions', 'subscriptions']],
+    );
+    expect(tables).toHaveLength(0);
+
+    const enums = await dataSource.query<{ typname: string }[]>(
+      `SELECT typname FROM pg_type WHERE typname = 'reaction_type'`,
+    );
+    expect(enums).toHaveLength(0);
+  });
+
+  it('should revert the previous migration and remove the video editing columns', async () => {
     await dataSource.undoLastMigration();
 
     const result = await dataSource.query<{ column_name: string }[]>(
