@@ -123,7 +123,7 @@
 
 ### SI-06.14 — Aliases de contrato e handlers MSW das interações sociais
 - **Status:** completed
-- **Tests:** `mocks/handlers/__tests__/social.test.ts` 22 passing; suíte completa do frontend 360 passing; tsc e eslint clean
+- **Tests:** `mocks/handlers/__tests__/social.test.ts` 24 passing; suíte completa do frontend 360 passing; tsc e eslint clean
 - **Observations:**
   - Gatilhos reservados: `comment-not-found-id`, `comment-depth-exceeded-id` (pai no limite de profundidade), `own-channel` (nickname) e `own-channel-video-id` (vídeo do canal do espectador).
   - Handlers de leitura devolvem `viewerState` somente quando há `Authorization`; anônimo recebe `null`.

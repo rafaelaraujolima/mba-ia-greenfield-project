@@ -1,17 +1,22 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-function ThumbsUpIcon({ className, ...props }: React.ComponentProps<"svg">) {
+function ThumbsUpIcon({
+  className,
+  filled = false,
+  ...props
+}: React.ComponentProps<"svg"> & { filled?: boolean }) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
-      fill="none"
+      fill={filled ? "currentColor" : "none"}
       stroke="currentColor"
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
+      data-filled={filled}
       className={cn(className)}
       {...props}
     >
