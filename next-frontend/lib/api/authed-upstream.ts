@@ -22,7 +22,10 @@ export interface AuthedUpstreamOptions {
   routeHandler?: boolean;
 }
 
-type UpstreamMethods = Pick<typeof upstream, "GET" | "POST" | "PATCH">;
+type UpstreamMethods = Pick<
+  typeof upstream,
+  "GET" | "POST" | "PUT" | "PATCH" | "DELETE"
+>;
 
 async function currentPath(): Promise<string> {
   const requestHeaders = await headers();
@@ -35,7 +38,7 @@ async function currentPath(): Promise<string> {
  * preserving the tuple's shape so it can be re-spread into the underlying
  * `upstream.<METHOD>(url, ...init)` call untouched.
  */
-function withAuthHeader<Init extends readonly unknown[]>(
+export function withAuthHeader<Init extends readonly unknown[]>(
   init: Init,
   accessToken: string
 ): Init {
@@ -103,9 +106,20 @@ export function authedUpstream(options?: AuthedUpstreamOptions): UpstreamMethods
         (accessToken) => upstream.POST(url, ...withAuthHeader(init, accessToken)),
         options
       ),
+    PUT: (url, ...init) =>
+      callAuthed(
+        (accessToken) => upstream.PUT(url, ...withAuthHeader(init, accessToken)),
+        options
+      ),
     PATCH: (url, ...init) =>
       callAuthed(
         (accessToken) => upstream.PATCH(url, ...withAuthHeader(init, accessToken)),
+        options
+      ),
+    DELETE: (url, ...init) =>
+      callAuthed(
+        (accessToken) =>
+          upstream.DELETE(url, ...withAuthHeader(init, accessToken)),
         options
       ),
   };

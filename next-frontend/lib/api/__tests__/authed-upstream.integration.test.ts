@@ -162,6 +162,51 @@ describe("authedUpstream", () => {
       expect(refreshCalls).toBe(1);
     });
 
+    it.each([
+      ["PUT", http.put, "like"],
+      ["DELETE", http.delete, undefined],
+    ] as const)(
+      "%s attaches the bearer and refreshes once on 401 before retrying",
+      async (method, route, type) => {
+        const videoId = "11111111-1111-4111-8111-111111111111";
+        const receivedAuthPerCall: (string | null)[] = [];
+        let refreshCalls = 0;
+
+        server.use(
+          route(`${env.API_URL}/videos/${videoId}/reaction`, ({ request }) => {
+            receivedAuthPerCall.push(request.headers.get("Authorization"));
+            return new HttpResponse(null, {
+              status: receivedAuthPerCall.length === 1 ? 401 : 204,
+            });
+          }),
+          http.post(REFRESH_URL, () => {
+            refreshCalls++;
+            return HttpResponse.json({
+              access_token: "refreshed-at",
+              refresh_token: "refreshed-rt",
+            });
+          })
+        );
+
+        const client = authedUpstream({ routeHandler: true });
+        const init = { params: { path: { id: videoId } } };
+        const { response } =
+          method === "PUT"
+            ? await client.PUT("/videos/{id}/reaction", {
+                ...init,
+                body: { type: type ?? "like" } as never,
+              })
+            : await client.DELETE("/videos/{id}/reaction", init);
+
+        expect(response.status).toBe(204);
+        expect(refreshCalls).toBe(1);
+        expect(receivedAuthPerCall).toEqual([
+          `Bearer ${SEED_SESSION.accessToken}`,
+          "Bearer refreshed-at",
+        ]);
+      }
+    );
+
     it("does not redirect on 401", async () => {
       server.use(
         http.get(CHANNELS_ME_URL, () => new HttpResponse(null, { status: 401 })),

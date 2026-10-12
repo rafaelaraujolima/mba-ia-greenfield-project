@@ -6,11 +6,12 @@ import type {
   Channel,
   ChannelVideoList,
   ManageVideoList,
+  PublicChannel,
 } from "@/lib/api/contracts";
 import { env } from "@/lib/env";
 
 import { buildCategoryList } from "../factories/category";
-import { buildChannel } from "../factories/channel";
+import { buildChannel, buildPublicChannel } from "../factories/channel";
 import { buildChannelVideoListItem, buildManageVideoListItem } from "../factories/video";
 
 // Reserved trigger table (shared with E2E — trigger values must not collide
@@ -20,6 +21,7 @@ const CHANNEL_NOT_FOUND_ID = "channel-not-found-id";
 const NICKNAME_NOT_FOUND = "nickname-not-found";
 const ALREADY_USED_NICKNAME = "already-used-nickname";
 const NO_CHANNEL_TOKEN = "no-channel-token";
+const OWN_CHANNEL_NICKNAME = "own-channel";
 
 const DEFAULT_PAGE_SIZE = 10;
 const DEFAULT_TOTAL = 25;
@@ -54,7 +56,7 @@ export const handlers = [
   }),
 
   // GET /channels/:nickname
-  http.get(`${env.API_URL}/channels/:nickname`, ({ params }) => {
+  http.get(`${env.API_URL}/channels/:nickname`, ({ params, request }) => {
     const nickname = params.nickname as string;
 
     if (nickname === NICKNAME_NOT_FOUND) {
@@ -64,14 +66,20 @@ export const handlers = [
       );
     }
 
-    const channel = buildChannel({ nickname });
-    return HttpResponse.json<Omit<Channel, "updatedAt">>(
-      {
-        id: channel.id,
-        name: channel.name,
-        nickname: channel.nickname,
-        description: channel.description,
-      },
+    // viewerState is null for anonymous readers; the reserved nickname
+    // "own-channel" flags the requester as the owner (social-interactions/TD-06).
+    const authed = request.headers.has("Authorization");
+    return HttpResponse.json<PublicChannel>(
+      buildPublicChannel({
+        nickname,
+        subscriberCount: 1200,
+        viewerState: authed
+          ? {
+              subscribed: false,
+              isChannelOwner: nickname === OWN_CHANNEL_NICKNAME,
+            }
+          : null,
+      }),
       { status: 200 }
     );
   }),

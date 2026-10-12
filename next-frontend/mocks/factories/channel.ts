@@ -1,4 +1,4 @@
-import type { Channel } from "@/lib/api/contracts";
+import type { Channel, PublicChannel } from "@/lib/api/contracts";
 
 // Channel: mirrors the GET /channels/me response shape verbatim.
 // NOTE: id/nickname defaults are load-bearing — the login BFF integration
@@ -15,5 +15,22 @@ const baseChannel: Channel = {
 
 export const buildChannel = (overrides: Partial<Channel> = {}): Channel => ({
   ...baseChannel,
+  ...overrides,
+});
+
+// PublicChannel: mirrors the GET /channels/{nickname} response shape.
+const basePublicChannel: PublicChannel = {
+  id: "channel-fixture-id",
+  name: "Fixture Channel",
+  nickname: "fixture-channel",
+  description: null,
+  subscriberCount: 0,
+  viewerState: null,
+};
+
+export const buildPublicChannel = (
+  overrides: Partial<PublicChannel> = {}
+): PublicChannel => ({
+  ...basePublicChannel,
   ...overrides,
 });

@@ -260,6 +260,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/channels/{nickname}/subscription": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Subscribe to a channel
+         * @description Idempotent: subscribing to an already followed channel also returns 204. The owner of a channel cannot subscribe to it.
+         */
+        put: operations["SubscriptionsController_subscribe"];
+        post?: never;
+        /**
+         * Unsubscribe from a channel
+         * @description Idempotent: cancelling a subscription that does not exist also returns 204.
+         */
+        delete: operations["SubscriptionsController_unsubscribe"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List followed channels
+         * @description Channels the requester follows, most recent subscription first. The side menu requests limit=10.
+         */
+        get: operations["SubscriptionsController_listFollowed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/subscriptions/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Subscriptions feed
+         * @description Paginated published videos (ready, public) from the channels the requester follows, newest first.
+         */
+        get: operations["SubscriptionsController_listFeed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/categories": {
         parameters: {
             query?: never;
@@ -309,7 +373,7 @@ export interface paths {
         };
         /**
          * List channel videos (management panel)
-         * @description Paginated listing of every video of a channel owned by the requester, regardless of status or visibility. views, likes and comments are placeholders until Phase 06.
+         * @description Paginated listing of every video of a channel owned by the requester, regardless of status or visibility. likes and comments are the real counts (comments include replies); views is still a placeholder.
          */
         get: operations["VideosController_findByChannel"];
         put?: never;
@@ -528,6 +592,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/videos/{id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the top-level comments of a video
+         * @description Newest first, paginated by an opaque cursor. Public; a valid access token only adds the requester viewerState (an expired or invalid token is treated as anonymous).
+         */
+        get: operations["CommentsController_listTopLevel"];
+        put?: never;
+        /**
+         * Comment on a video or reply to a comment
+         * @description Creates a top-level comment or, with parentId, a reply to a top-level comment (max depth 2). The body is plain text.
+         */
+        post: operations["CommentsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/{id}/replies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List the replies of a top-level comment
+         * @description Newest first, paginated by an opaque cursor. Public; a valid access token only adds the requester viewerState.
+         */
+        get: operations["CommentsController_listReplies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/videos/{id}/reaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the requester reaction to a video
+         * @description Idempotent: a user has at most one reaction (like or dislike) per video; sending a different type replaces it.
+         */
+        put: operations["ReactionsController_setVideoReaction"];
+        post?: never;
+        /**
+         * Remove the requester reaction to a video
+         * @description Idempotent: removing a reaction that does not exist also returns 204.
+         */
+        delete: operations["ReactionsController_removeVideoReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/comments/{id}/reaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set the requester reaction to a comment
+         * @description Idempotent: a user has at most one reaction (like or dislike) per comment; sending a different type replaces it.
+         */
+        put: operations["ReactionsController_setCommentReaction"];
+        post?: never;
+        /**
+         * Remove the requester reaction to a comment
+         * @description Idempotent: removing a reaction that does not exist also returns 204.
+         */
+        delete: operations["ReactionsController_removeCommentReaction"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -543,6 +699,8 @@ export interface components {
         RequestUploadPartsDto: Record<string, never>;
         CompleteUploadDto: Record<string, never>;
         UpdateVideoDto: Record<string, never>;
+        CreateCommentDto: Record<string, never>;
+        SetReactionDto: Record<string, never>;
         ApiErrorEnvelope: {
             /** @example 401 */
             statusCode: number;
@@ -1062,11 +1220,203 @@ export interface operations {
                         name?: string;
                         nickname?: string;
                         description?: string | null;
+                        subscriberCount?: number;
+                        viewerState?: {
+                            subscribed?: boolean;
+                            isChannelOwner?: boolean;
+                        } | null;
                     };
                 };
             };
             /** @description Channel not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    SubscriptionsController_subscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nickname: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Subscribed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description The channel belongs to the requester */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Channel not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    SubscriptionsController_unsubscribe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nickname: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Unsubscribed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Channel not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    SubscriptionsController_listFollowed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Followed channels */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: {
+                            /** Format: uuid */
+                            channelId?: string;
+                            channelName?: string;
+                            channelNickname?: string;
+                            /** Format: date-time */
+                            subscribedAt?: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Invalid limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    SubscriptionsController_listFeed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Paginated feed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: {
+                            /** Format: uuid */
+                            id?: string;
+                            title?: string;
+                            thumbnailKey?: string | null;
+                            /** Format: date-time */
+                            publishedAt?: string;
+                            /** Format: date-time */
+                            updatedAt?: string;
+                            durationSeconds?: number | null;
+                            channelName?: string;
+                            channelNickname?: string;
+                        }[];
+                        page?: number;
+                        pageSize?: number;
+                        total?: number;
+                    };
+                };
+            };
+            /** @description Invalid pagination parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1456,6 +1806,14 @@ export interface operations {
                         viewCount?: number;
                         channelName?: string;
                         channelNickname?: string;
+                        likeCount?: number;
+                        channelSubscriberCount?: number;
+                        viewerState?: {
+                            /** @enum {string|null} */
+                            reaction?: "like" | "dislike" | null;
+                            subscribed?: boolean;
+                            isChannelOwner?: boolean;
+                        } | null;
                         /** Format: date-time */
                         createdAt?: string;
                         /** Format: date-time */
@@ -1806,6 +2164,378 @@ export interface operations {
                 };
             };
             /** @description Source video not found, or not visible to the requester */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    CommentsController_listTopLevel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of comments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            parentId?: string | null;
+                            body?: string;
+                            /** Format: date-time */
+                            createdAt?: string;
+                            author?: {
+                                channelName?: string;
+                                channelNickname?: string;
+                            };
+                            likeCount?: number;
+                            replyCount?: number;
+                            viewerState?: {
+                                /** @enum {string|null} */
+                                reaction?: "like" | "dislike" | null;
+                            } | null;
+                        }[];
+                        nextCursor?: string | null;
+                        totalCount?: number;
+                    };
+                };
+            };
+            /** @description Invalid cursor (INVALID_CURSOR) or limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Video not found or not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    CommentsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCommentDto"];
+            };
+        };
+        responses: {
+            /** @description Comment created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        id?: string;
+                        /** Format: uuid */
+                        parentId?: string | null;
+                        body?: string;
+                        /** Format: date-time */
+                        createdAt?: string;
+                        author?: {
+                            channelName?: string;
+                            channelNickname?: string;
+                        };
+                        likeCount?: number;
+                        replyCount?: number;
+                        viewerState?: {
+                            /** @enum {string|null} */
+                            reaction?: "like" | "dislike" | null;
+                        } | null;
+                    };
+                };
+            };
+            /** @description Validation failed or the parent is itself a reply (COMMENT_DEPTH_EXCEEDED) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Video not found or not visible (VIDEO_NOT_FOUND), or parent comment not found (COMMENT_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    CommentsController_listReplies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of replies */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items?: {
+                            /** Format: uuid */
+                            id?: string;
+                            /** Format: uuid */
+                            parentId?: string | null;
+                            body?: string;
+                            /** Format: date-time */
+                            createdAt?: string;
+                            author?: {
+                                channelName?: string;
+                                channelNickname?: string;
+                            };
+                            likeCount?: number;
+                            replyCount?: number;
+                            viewerState?: {
+                                /** @enum {string|null} */
+                                reaction?: "like" | "dislike" | null;
+                            } | null;
+                        }[];
+                        nextCursor?: string | null;
+                    };
+                };
+            };
+            /** @description Invalid cursor (INVALID_CURSOR) or limit */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Comment not found, not top-level, or its video is not visible */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    ReactionsController_setVideoReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetReactionDto"];
+            };
+        };
+        responses: {
+            /** @description Reaction set */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Video not found or not visible to the requester */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    ReactionsController_removeVideoReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reaction removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Video not found or not visible to the requester */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    ReactionsController_setCommentReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetReactionDto"];
+            };
+        };
+        responses: {
+            /** @description Reaction set */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failed */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Comment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+        };
+    };
+    ReactionsController_removeCommentReaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reaction removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiErrorEnvelope"];
+                };
+            };
+            /** @description Comment not found */
             404: {
                 headers: {
                     [name: string]: unknown;

@@ -18,6 +18,9 @@ const VIDEO_NOT_FOUND_ID = "video-not-found-id";
 const VIDEO_NOT_OWNED_ID = "video-not-owned-id";
 const VIDEO_INVALID_STATE_ID = "video-invalid-state-id";
 const CATEGORY_NOT_FOUND_ID = "category-not-found-id";
+// Video of the channel with nickname "own-channel" (see handlers/channels.ts):
+// the requester is the channel owner.
+const OWN_CHANNEL_VIDEO_ID = "own-channel-video-id";
 
 const THUMBNAIL_SIZE_LIMIT_BYTES = 5 * 1024 * 1024; // 5MB, per Error Catalog
 
@@ -31,7 +34,7 @@ function errorEnvelope(
 
 export const handlers = [
   // GET /videos/:id
-  http.get(`${env.API_URL}/videos/:id`, ({ params }) => {
+  http.get(`${env.API_URL}/videos/:id`, ({ params, request }) => {
     const id = params.id as string;
 
     if (id === VIDEO_NOT_FOUND_ID) {
@@ -40,7 +43,21 @@ export const handlers = [
         { status: 404 }
       );
     }
-    return HttpResponse.json<Video>(buildVideo({ id }), { status: 200 });
+    // viewerState is null for anonymous readers (social-interactions/TD-06).
+    const authed = request.headers.has("Authorization");
+    const isOwnChannel = id === OWN_CHANNEL_VIDEO_ID;
+    return HttpResponse.json<Video>(
+      buildVideo({
+        id,
+        channelNickname: isOwnChannel ? "own-channel" : "fixture-channel",
+        likeCount: 42,
+        channelSubscriberCount: 1200,
+        viewerState: authed
+          ? { reaction: null, subscribed: false, isChannelOwner: isOwnChannel }
+          : null,
+      }),
+      { status: 200 }
+    );
   }),
 
   // PATCH /videos/:id

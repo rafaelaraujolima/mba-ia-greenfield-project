@@ -646,6 +646,20 @@
                     "description": {
                       "type": "string",
                       "nullable": true
+                    },
+                    "subscriberCount": {
+                      "type": "number"
+                    },
+                    "viewerState": {
+                      "nullable": true,
+                      "properties": {
+                        "subscribed": {
+                          "type": "boolean"
+                        },
+                        "isChannelOwner": {
+                          "type": "boolean"
+                        }
+                      }
                     }
                   }
                 }
@@ -666,6 +680,278 @@
         "summary": "Get a public channel",
         "tags": [
           "channels"
+        ]
+      }
+    },
+    "/channels/{nickname}/subscription": {
+      "put": {
+        "description": "Idempotent: subscribing to an already followed channel also returns 204. The owner of a channel cannot subscribe to it.",
+        "operationId": "SubscriptionsController_subscribe",
+        "parameters": [
+          {
+            "name": "nickname",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Subscribed"
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The channel belongs to the requester",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Subscribe to a channel",
+        "tags": [
+          "subscriptions"
+        ]
+      },
+      "delete": {
+        "description": "Idempotent: cancelling a subscription that does not exist also returns 204.",
+        "operationId": "SubscriptionsController_unsubscribe",
+        "parameters": [
+          {
+            "name": "nickname",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Unsubscribed"
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Channel not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Unsubscribe from a channel",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions": {
+      "get": {
+        "description": "Channels the requester follows, most recent subscription first. The side menu requests limit=10.",
+        "operationId": "SubscriptionsController_listFollowed",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Followed channels",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "channelId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "channelName": {
+                            "type": "string"
+                          },
+                          "channelNickname": {
+                            "type": "string"
+                          },
+                          "subscribedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "List followed channels",
+        "tags": [
+          "subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/videos": {
+      "get": {
+        "description": "Paginated published videos (ready, public) from the channels the requester follows, newest first.",
+        "operationId": "SubscriptionsController_listFeed",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Paginated feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "thumbnailKey": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "publishedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "durationSeconds": {
+                            "type": "number",
+                            "nullable": true
+                          },
+                          "channelName": {
+                            "type": "string"
+                          },
+                          "channelNickname": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "page": {
+                      "type": "number"
+                    },
+                    "pageSize": {
+                      "type": "number"
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Subscriptions feed",
+        "tags": [
+          "subscriptions"
         ]
       }
     },
@@ -794,7 +1080,7 @@
     },
     "/channels/{id}/manage/videos": {
       "get": {
-        "description": "Paginated listing of every video of a channel owned by the requester, regardless of status or visibility. views, likes and comments are placeholders until Phase 06.",
+        "description": "Paginated listing of every video of a channel owned by the requester, regardless of status or visibility. likes and comments are the real counts (comments include replies); views is still a placeholder.",
         "operationId": "VideosController_findByChannel",
         "parameters": [
           {
@@ -1277,6 +1563,31 @@
                     },
                     "channelNickname": {
                       "type": "string"
+                    },
+                    "likeCount": {
+                      "type": "number"
+                    },
+                    "channelSubscriberCount": {
+                      "type": "number"
+                    },
+                    "viewerState": {
+                      "nullable": true,
+                      "properties": {
+                        "reaction": {
+                          "type": "string",
+                          "enum": [
+                            "like",
+                            "dislike"
+                          ],
+                          "nullable": true
+                        },
+                        "subscribed": {
+                          "type": "boolean"
+                        },
+                        "isChannelOwner": {
+                          "type": "boolean"
+                        }
+                      }
                     },
                     "createdAt": {
                       "type": "string",
@@ -1798,6 +2109,584 @@
           "videos"
         ]
       }
+    },
+    "/videos/{id}/comments": {
+      "post": {
+        "description": "Creates a top-level comment or, with parentId, a reply to a top-level comment (max depth 2). The body is plain text.",
+        "operationId": "CommentsController_create",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Comment created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "parentId": {
+                      "type": "string",
+                      "format": "uuid",
+                      "nullable": true
+                    },
+                    "body": {
+                      "type": "string"
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "author": {
+                      "properties": {
+                        "channelName": {
+                          "type": "string"
+                        },
+                        "channelNickname": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "likeCount": {
+                      "type": "number"
+                    },
+                    "replyCount": {
+                      "type": "number"
+                    },
+                    "viewerState": {
+                      "nullable": true,
+                      "properties": {
+                        "reaction": {
+                          "type": "string",
+                          "enum": [
+                            "like",
+                            "dislike"
+                          ],
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed or the parent is itself a reply (COMMENT_DEPTH_EXCEEDED)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Video not found or not visible (VIDEO_NOT_FOUND), or parent comment not found (COMMENT_NOT_FOUND)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Comment on a video or reply to a comment",
+        "tags": [
+          "comments"
+        ]
+      },
+      "get": {
+        "description": "Newest first, paginated by an opaque cursor. Public; a valid access token only adds the requester viewerState (an expired or invalid token is treated as anonymous).",
+        "operationId": "CommentsController_listTopLevel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of comments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "parentId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "author": {
+                            "properties": {
+                              "channelName": {
+                                "type": "string"
+                              },
+                              "channelNickname": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "likeCount": {
+                            "type": "number"
+                          },
+                          "replyCount": {
+                            "type": "number"
+                          },
+                          "viewerState": {
+                            "nullable": true,
+                            "properties": {
+                              "reaction": {
+                                "type": "string",
+                                "enum": [
+                                  "like",
+                                  "dislike"
+                                ],
+                                "nullable": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "totalCount": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid cursor (INVALID_CURSOR) or limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Video not found or not visible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the top-level comments of a video",
+        "tags": [
+          "comments"
+        ]
+      }
+    },
+    "/comments/{id}/replies": {
+      "get": {
+        "description": "Newest first, paginated by an opaque cursor. Public; a valid access token only adds the requester viewerState.",
+        "operationId": "CommentsController_listReplies",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of replies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "parentId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "nullable": true
+                          },
+                          "body": {
+                            "type": "string"
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "author": {
+                            "properties": {
+                              "channelName": {
+                                "type": "string"
+                              },
+                              "channelNickname": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "likeCount": {
+                            "type": "number"
+                          },
+                          "replyCount": {
+                            "type": "number"
+                          },
+                          "viewerState": {
+                            "nullable": true,
+                            "properties": {
+                              "reaction": {
+                                "type": "string",
+                                "enum": [
+                                  "like",
+                                  "dislike"
+                                ],
+                                "nullable": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid cursor (INVALID_CURSOR) or limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Comment not found, not top-level, or its video is not visible",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "summary": "List the replies of a top-level comment",
+        "tags": [
+          "comments"
+        ]
+      }
+    },
+    "/videos/{id}/reaction": {
+      "put": {
+        "description": "Idempotent: a user has at most one reaction (like or dislike) per video; sending a different type replaces it.",
+        "operationId": "ReactionsController_setVideoReaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Reaction set"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Video not found or not visible to the requester",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Set the requester reaction to a video",
+        "tags": [
+          "reactions"
+        ]
+      },
+      "delete": {
+        "description": "Idempotent: removing a reaction that does not exist also returns 204.",
+        "operationId": "ReactionsController_removeVideoReaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reaction removed"
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Video not found or not visible to the requester",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Remove the requester reaction to a video",
+        "tags": [
+          "reactions"
+        ]
+      }
+    },
+    "/comments/{id}/reaction": {
+      "put": {
+        "description": "Idempotent: a user has at most one reaction (like or dislike) per comment; sending a different type replaces it.",
+        "operationId": "ReactionsController_setCommentReaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetReactionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Reaction set"
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Comment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Set the requester reaction to a comment",
+        "tags": [
+          "reactions"
+        ]
+      },
+      "delete": {
+        "description": "Idempotent: removing a reaction that does not exist also returns 204.",
+        "operationId": "ReactionsController_removeCommentReaction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Reaction removed"
+          },
+          "401": {
+            "description": "Missing or invalid access token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Comment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "access-token": []
+          }
+        ],
+        "summary": "Remove the requester reaction to a comment",
+        "tags": [
+          "reactions"
+        ]
+      }
     }
   },
   "info": {
@@ -1858,6 +2747,14 @@
         "properties": {}
       },
       "UpdateVideoDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateCommentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SetReactionDto": {
         "type": "object",
         "properties": {}
       },

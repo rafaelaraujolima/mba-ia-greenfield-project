@@ -24,6 +24,9 @@ const baseVideo: Video = {
   viewCount: 0,
   channelName: "Fixture Channel",
   channelNickname: "fixture-channel",
+  likeCount: 0,
+  channelSubscriberCount: 0,
+  viewerState: null,
   createdAt: "2025-12-31T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };

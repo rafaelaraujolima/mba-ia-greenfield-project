@@ -204,9 +204,9 @@ describe("findUnguardedMutationHandlers (sweep logic, fixture-based)", () => {
 
 describe("app/api/videos and app/api/channels — requireSession() sweep", () => {
   const apiRoot = join(import.meta.dirname, "..");
-  const scanDirs = ["videos", "channels"];
+  const scanDirs = ["videos", "channels", "comments"];
 
-  it("every mutation handler under app/api/videos/** and app/api/channels/** calls requireSession()", () => {
+  it("every mutation handler under app/api/videos/**, app/api/channels/** and app/api/comments/** calls requireSession()", () => {
     const files = scanDirs.reduce<Record<string, string>>((acc, dir) => {
       const dirFiles = collectRouteFiles(join(apiRoot, dir));
       for (const [path, content] of Object.entries(dirFiles)) {

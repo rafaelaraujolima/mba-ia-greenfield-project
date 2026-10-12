@@ -109,3 +109,31 @@ export type VideoSuggestions =
 // Category: single element of the GET /categories array response.
 export type Category =
   paths["/categories"]["get"]["responses"][200]["content"]["application/json"][number];
+
+// ─── Social interactions (phase 06) ───────────────────────────────────────────
+
+// CommentList: GET /videos/{id}/comments 200 body — top-level comments page.
+export type CommentList =
+  paths["/videos/{id}/comments"]["get"]["responses"][200]["content"]["application/json"];
+
+// CommentItem: single comment as returned by the list, replies and create endpoints.
+export type CommentItem = NonNullable<CommentList["items"]>[number];
+
+// CommentReplies: GET /comments/{id}/replies 200 body.
+export type CommentReplies =
+  paths["/comments/{id}/replies"]["get"]["responses"][200]["content"]["application/json"];
+
+// Request bodies (fields are empty in the current openapi.json, same as the auth DTOs).
+export type CreateCommentDto =
+  paths["/videos/{id}/comments"]["post"]["requestBody"]["content"]["application/json"];
+
+export type SetReactionDto =
+  paths["/videos/{id}/reaction"]["put"]["requestBody"]["content"]["application/json"];
+
+// SubscriptionList: GET /subscriptions 200 body — followed channels (left menu).
+export type SubscriptionList =
+  paths["/subscriptions"]["get"]["responses"][200]["content"]["application/json"];
+
+// SubscriptionFeed: GET /subscriptions/videos 200 body — videos of followed channels.
+export type SubscriptionFeed =
+  paths["/subscriptions/videos"]["get"]["responses"][200]["content"]["application/json"];
