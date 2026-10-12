@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation"
 
 import { upstream } from "@/lib/api/upstream"
+import { optionalAuthedUpstream } from "@/lib/api/optional-authed-upstream"
 import { normalizePage, getPaginationWindow } from "@/lib/pagination"
 import { ChannelHeader } from "@/components/channel/channel-header"
+import { SubscribeButton } from "@/components/social/subscribe-button"
 import { VideoSortFilter } from "@/components/channel/video-sort-filter"
 import { VideoCard } from "@/components/channel/video-card"
 import { PaginationLinks } from "@/components/common/pagination-links"
@@ -28,11 +30,13 @@ export default async function ChannelPage({
   const { page: rawPage } = await searchParams
   const page = normalizePage(rawPage)
 
-  // Anonymous page: calls the plain `upstream` client (no bearer token) —
+  // Anonymous page: the channel read uses `optionalAuthedUpstream` so the
+  // viewer state comes with it when there is a session (social-interactions/TD-06);
+  // the videos listing stays on the plain `upstream` client —
   // `GET /channels/{nickname}` and `GET /channels/{nickname}/videos` are
   // public endpoints (§Authorization Matrix).
   const [channelResult, videosResult] = await Promise.all([
-    upstream.GET("/channels/{nickname}", {
+    optionalAuthedUpstream().GET("/channels/{nickname}", {
       params: { path: { nickname } },
     }),
     upstream.GET("/channels/{nickname}/videos", {
@@ -84,6 +88,14 @@ export default async function ChannelPage({
         name={channel.name ?? ""}
         nickname={channel.nickname ? `@${channel.nickname}` : ""}
         description={channel.description}
+        subscriberCount={channel.subscriberCount ?? 0}
+        action={
+          <SubscribeButton
+            nickname={channel.nickname ?? nickname}
+            subscribed={channel.viewerState?.subscribed ?? false}
+            isChannelOwner={channel.viewerState?.isChannelOwner ?? false}
+          />
+        }
       />
 
       <VideoSortFilter className="px-6" />

@@ -1,7 +1,7 @@
 # phase-06-social-interactions — Progress
 
-**Status:** in_progress
-**SIs:** 18/29 completed
+**Status:** completed
+**SIs:** 29/29 completed
 
 ### SI-06.0.1 — Custom-business simple group: thumbs-down-icon
 - **Status:** completed
@@ -147,57 +147,79 @@
   - `cursor` e `limit` são repassados ao upstream com cast `as never` porque o contrato exportado não declara os query params dos comentários.
 
 ### SI-06.18.0 — Drift audit: Página de visualização do vídeo
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** audit-only; seção `watch-page-social` escrita em `frontend-drift-report.md`
+- **Observations:**
+  - Auditoria feita contra os valores do Figma já transcritos no UI Contract do plano; o MCP do Figma não foi consultado de novo. Nenhum arquivo de `next-frontend` foi tocado pelo SI.
+  - Os ícones thumbs-up/down já tinham a variante preenchida (SI-06.0.1), então nenhuma edição de DS foi necessária; Button (altura 28px do Reply) e Input (só borda inferior) viraram `exception`, resolvidos por `className` no ponto de uso.
 
 ### SI-06.18a — Tela de visualização do vídeo (visual shell)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** sem teste dedicado (shell); `npx tsc --noEmit` clean e `next build` compila
+- **Observations:**
+  - O shell e a lógica foram implementados juntos nos mesmos arquivos (SI-06.18a/b/c), então não há commit separado do shell visual.
 
 ### SI-06.18b — Tela de visualização do vídeo (lógica & wiring: reações e inscrição)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** suítes novas: `video-reaction-buttons` 7, `subscribe-button` 5, `comment-reaction-buttons` 5, `channel-info` 2, `format-count` 2; suíte completa 439 passing; tsc e eslint clean
+- **Observations:**
+  - `useReaction` (`hooks/use-reaction.ts`) concentra o `useOptimistic` + `PUT`/`DELETE` + `router.refresh()` e é reutilizado pelo vídeo e pelo comentário.
+  - A contagem de inscritos do `ChannelInfo` é renderizada no servidor: atualiza no `router.refresh()`, sem ajuste otimista (só o rótulo do botão é otimista).
+  - O estado otimista reverte quando a transição termina; os testes observam o estado enquanto a requisição está pendente, porque o `router.refresh()` é mockado.
+  - Os E2E de `next-frontend/specs/watch-page-reactions-subscribe.plan.md` não foram automatizados em Playwright nesta sessão.
 
 ### SI-06.18c — Tela de visualização do vídeo (lógica & wiring: comentários)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** suítes novas: `comments-section` 5, `comment-form` 5, `comment-item` 7; suíte completa 439 passing; tsc e eslint clean
+- **Observations:**
+  - Limite de 5000 caracteres espelha `COMMENT_BODY_MAX_LENGTH` do backend; vale confirmar o valor (decidido no SI-06.9).
+  - O servidor define a ordem das respostas; ao criar a primeira resposta de um comentário cujas respostas ainda não foram carregadas, a lista é buscada do servidor em vez de inserida localmente.
+  - Os E2E de `next-frontend/specs/watch-page-comments.plan.md` não foram automatizados em Playwright nesta sessão.
 
 ### SI-06.19.0 — Drift audit: Página pública do canal
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** audit-only; seção `channel-page-social` escrita em `frontend-drift-report.md`
+- **Observations:**
+  - Auditoria feita contra os valores do Figma já transcritos no UI Contract do plano; o MCP do Figma não foi consultado de novo. Nenhum arquivo de `next-frontend` foi tocado pelo SI.
 
 ### SI-06.19a — Página pública do canal (visual shell)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** sem teste dedicado (shell); tsc clean
+- **Observations:**
+  - Implementado junto com o SI-06.19b nos mesmos arquivos.
 
 ### SI-06.19b — Página pública do canal (lógica & wiring)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** `channel-header.test.tsx` +2 casos; suíte completa 439 passing; tsc e eslint clean
+- **Observations:**
+  - A página do canal lê `GET /channels/{nickname}` com `optionalAuthedUpstream`; a listagem de vídeos continua no `upstream` anônimo.
+  - O Subscribe do canal reaproveita o `SubscribeButton` do SI-06.18b.
+  - Os E2E de `next-frontend/specs/channel-page-subscribe.plan.md` não foram automatizados em Playwright nesta sessão.
 
 ### SI-06.20.0 — Drift audit: Menu lateral (Left Menu)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** audit-only; seção `left-menu-subscriptions` escrita em `frontend-drift-report.md`
+- **Observations:**
+  - Auditoria feita contra os valores do Figma já transcritos no UI Contract do plano; o MCP do Figma não foi consultado de novo. Nenhum arquivo de `next-frontend` foi tocado pelo SI.
 
 ### SI-06.20a — Menu lateral (visual shell)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** sem teste dedicado (shell); tsc clean
+- **Observations:**
+  - Implementado junto com o SI-06.20b/c.
 
 ### SI-06.20b — Menu lateral (lógica & wiring: canais seguidos)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** `side-nav-subscription-list` 3, `subscription-nav-item` 2, `side-nav` +2 casos; suíte completa 439 passing; tsc e eslint clean
+- **Observations:**
+  - O layout `(studio)` lê `GET /subscriptions?limit=10` com `authedUpstream` em RSC e passa a lista por `AppShell` -> `SideNav`; falha na leitura oculta a seção.
+  - Um `401` nessa leitura segue o comportamento padrão do `authedUpstream` em RSC (redirect para o refresh).
+  - Os E2E de `next-frontend/specs/studio-left-menu-subscriptions.plan.md` não foram automatizados em Playwright nesta sessão.
 
 ### SI-06.20c — Menu lateral (lógica & wiring: página de feed /subscriptions)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** página RSC sem teste unitário; `next build` compila e tsc clean
+- **Observations:**
+  - A rota `/subscriptions` fica em `app/(studio)/subscriptions/page.tsx` para herdar o `AppShell`; usa o grid de `VideoCard` com `PaginationLinks` (12 por página).
+  - Os E2E de `next-frontend/specs/subscriptions-feed.plan.md` não foram automatizados em Playwright nesta sessão.
 

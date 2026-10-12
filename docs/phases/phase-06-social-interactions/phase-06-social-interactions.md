@@ -1670,17 +1670,17 @@ SI-06.20.0 (root, independente — audit do menu)
 
 ## Deliverables
 
-- [ ] SI-06.0.1 — Custom-business simple group: thumbs-down-icon
-- [ ] SI-06.1 — Criar entidades e migration das interações sociais
-- [ ] SI-06.2 — SubscriptionsService e SubscriptionsModule
-- [ ] SI-06.3 — Endpoints de inscrição (PUT/DELETE /channels/{nickname}/subscription)
-- [ ] SI-06.4 — Endpoints GET /subscriptions e GET /subscriptions/videos
-- [ ] SI-06.5 — ReactionsService e ReactionsModule
-- [ ] SI-06.6 — Endpoints de reação em vídeos (PUT/DELETE /videos/{id}/reaction)
-- [ ] SI-06.7 — Endpoints de reação em comentários (PUT/DELETE /comments/{id}/reaction)
-- [ ] SI-06.8 — CommentsService e CommentsModule
-- [ ] SI-06.9 — Endpoint POST /videos/{id}/comments
-- [ ] SI-06.10 — Endpoints de listagem GET /videos/{id}/comments e GET /comments/{id}/replies
+- [x] SI-06.0.1 — Custom-business simple group: thumbs-down-icon
+- [x] SI-06.1 — Criar entidades e migration das interações sociais
+- [x] SI-06.2 — SubscriptionsService e SubscriptionsModule
+- [x] SI-06.3 — Endpoints de inscrição (PUT/DELETE /channels/{nickname}/subscription)
+- [x] SI-06.4 — Endpoints GET /subscriptions e GET /subscriptions/videos
+- [x] SI-06.5 — ReactionsService e ReactionsModule
+- [x] SI-06.6 — Endpoints de reação em vídeos (PUT/DELETE /videos/{id}/reaction)
+- [x] SI-06.7 — Endpoints de reação em comentários (PUT/DELETE /comments/{id}/reaction)
+- [x] SI-06.8 — CommentsService e CommentsModule
+- [x] SI-06.9 — Endpoint POST /videos/{id}/comments
+- [x] SI-06.10 — Endpoints de listagem GET /videos/{id}/comments e GET /comments/{id}/replies
 - [x] SI-06.11 — Contagens e viewerState em vídeo, canal e painel de gestão
 - [x] SI-06.12 — Sincronizar o contrato OpenAPI e os tipos do frontend
 - [x] SI-06.13 — authedUpstream com PUT/DELETE e leitura autenticada opcional
@@ -1688,17 +1688,17 @@ SI-06.20.0 (root, independente — audit do menu)
 - [x] SI-06.15 — Route Handlers BFF de reação em vídeos e comentários
 - [x] SI-06.16 — Route Handler BFF de inscrição em canais
 - [x] SI-06.17 — Route Handlers BFF de comentários e respostas
-- [ ] SI-06.18.0 — Drift audit: Página de visualização do vídeo
-- [ ] SI-06.18a — Tela de visualização do vídeo (visual shell)
-- [ ] SI-06.18b — Tela de visualização do vídeo (lógica & wiring: reações e inscrição)
-- [ ] SI-06.18c — Tela de visualização do vídeo (lógica & wiring: comentários)
-- [ ] SI-06.19.0 — Drift audit: Página pública do canal
-- [ ] SI-06.19a — Página pública do canal (visual shell)
-- [ ] SI-06.19b — Página pública do canal (lógica & wiring)
-- [ ] SI-06.20.0 — Drift audit: Menu lateral (Left Menu)
-- [ ] SI-06.20a — Menu lateral (visual shell)
-- [ ] SI-06.20b — Menu lateral (lógica & wiring: canais seguidos)
-- [ ] SI-06.20c — Menu lateral (lógica & wiring: página de feed /subscriptions)
+- [x] SI-06.18.0 — Drift audit: Página de visualização do vídeo
+- [x] SI-06.18a — Tela de visualização do vídeo (visual shell)
+- [x] SI-06.18b — Tela de visualização do vídeo (lógica & wiring: reações e inscrição)
+- [x] SI-06.18c — Tela de visualização do vídeo (lógica & wiring: comentários)
+- [x] SI-06.19.0 — Drift audit: Página pública do canal
+- [x] SI-06.19a — Página pública do canal (visual shell)
+- [x] SI-06.19b — Página pública do canal (lógica & wiring)
+- [x] SI-06.20.0 — Drift audit: Menu lateral (Left Menu)
+- [x] SI-06.20a — Menu lateral (visual shell)
+- [x] SI-06.20b — Menu lateral (lógica & wiring: canais seguidos)
+- [x] SI-06.20c — Menu lateral (lógica & wiring: página de feed /subscriptions)
 
 **Per-screen deliverables:**
 

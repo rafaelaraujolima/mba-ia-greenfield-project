@@ -16,3 +16,19 @@ describe("ChannelHeader", () => {
     expect(screen.queryByRole("paragraph")).not.toBeInTheDocument();
   });
 });
+
+describe("ChannelHeader social additions", () => {
+  it("shows the compact subscriber count in a polite live region", () => {
+    render(<ChannelHeader name="My Channel" nickname="@mychannel" subscriberCount={2_400_000} />);
+    const count = screen.getByText("2.4M subscribers");
+    expect(count).toHaveAttribute("aria-live", "polite");
+  });
+
+  it("renders the action slot beside the name and omits the count when not provided", () => {
+    render(
+      <ChannelHeader name="My Channel" nickname="@mychannel" action={<button>Subscribe</button>} />
+    );
+    expect(screen.getByRole("button", { name: "Subscribe" })).toBeInTheDocument();
+    expect(screen.queryByText(/subscribers/)).not.toBeInTheDocument();
+  });
+});
