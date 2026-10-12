@@ -1682,12 +1682,12 @@ SI-06.20.0 (root, independente — audit do menu)
 - [ ] SI-06.9 — Endpoint POST /videos/{id}/comments
 - [ ] SI-06.10 — Endpoints de listagem GET /videos/{id}/comments e GET /comments/{id}/replies
 - [x] SI-06.11 — Contagens e viewerState em vídeo, canal e painel de gestão
-- [ ] SI-06.12 — Sincronizar o contrato OpenAPI e os tipos do frontend
-- [ ] SI-06.13 — authedUpstream com PUT/DELETE e leitura autenticada opcional
-- [ ] SI-06.14 — Aliases de contrato e handlers MSW das interações sociais
-- [ ] SI-06.15 — Route Handlers BFF de reação em vídeos e comentários
-- [ ] SI-06.16 — Route Handler BFF de inscrição em canais
-- [ ] SI-06.17 — Route Handlers BFF de comentários e respostas
+- [x] SI-06.12 — Sincronizar o contrato OpenAPI e os tipos do frontend
+- [x] SI-06.13 — authedUpstream com PUT/DELETE e leitura autenticada opcional
+- [x] SI-06.14 — Aliases de contrato e handlers MSW das interações sociais
+- [x] SI-06.15 — Route Handlers BFF de reação em vídeos e comentários
+- [x] SI-06.16 — Route Handler BFF de inscrição em canais
+- [x] SI-06.17 — Route Handlers BFF de comentários e respostas
 - [ ] SI-06.18.0 — Drift audit: Página de visualização do vídeo
 - [ ] SI-06.18a — Tela de visualização do vídeo (visual shell)
 - [ ] SI-06.18b — Tela de visualização do vídeo (lógica & wiring: reações e inscrição)

@@ -1,7 +1,7 @@
 # phase-06-social-interactions — Progress
 
 **Status:** in_progress
-**SIs:** 12/29 completed
+**SIs:** 18/29 completed
 
 ### SI-06.0.1 — Custom-business simple group: thumbs-down-icon
 - **Status:** completed
@@ -107,34 +107,44 @@
   - O Docker Desktop estava parado no início da sessão e foi reiniciado junto com `docker compose up -d`.
 
 ### SI-06.12 — Sincronizar o contrato OpenAPI e os tipos do frontend
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** `openapi:export` + sync + `openapi:types` executados; `npx tsc --noEmit` clean no frontend; suíte do frontend 360 passing
+- **Observations:**
+  - `next-frontend/openapi.json` é ignorado pelo `.gitignore` do frontend, então só `nestjs-project/openapi.json` e `lib/api/types.gen.ts` entram no commit (o plano pedia os três).
+  - O export roda por `ts-node`, sem o plugin do Swagger do Nest CLI: os DTOs de requisição (`SetReactionDto`, `CreateCommentDto`) saem com `properties: {}`, igual aos DTOs de auth existentes; o BFF usa `body as never`, como o `PATCH /videos/{id}`. Os query params (`cursor`, `limit`) também não aparecem no contrato.
 
 ### SI-06.13 — authedUpstream com PUT/DELETE e leitura autenticada opcional
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 6 passing em `optional-authed-upstream.integration.test.ts`; `authed-upstream.integration.test.ts` 9 passing (2 novos para PUT/DELETE); `route-handlers-guard` 7 passing; tsc e eslint clean
+- **Observations:**
+  - `optionalAuthedUpstream` decodifica o `exp` do JWT: em Route Handler, token expirado dispara um refresh antes da leitura (via `withRefresh` com um 401 sintético), assim o `viewerState` continua resolvido; em RSC cai no anônimo sem redirecionar.
+  - A varredura `route-handlers-guard` passou a incluir `app/api/comments/**`, que não era coberto.
+  - `withAuthHeader` passou a ser exportado de `authed-upstream.ts` para reuso.
 
 ### SI-06.14 — Aliases de contrato e handlers MSW das interações sociais
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** `mocks/handlers/__tests__/social.test.ts` 22 passing; suíte completa do frontend 360 passing; tsc e eslint clean
+- **Observations:**
+  - Gatilhos reservados: `comment-not-found-id`, `comment-depth-exceeded-id` (pai no limite de profundidade), `own-channel` (nickname) e `own-channel-video-id` (vídeo do canal do espectador).
+  - Handlers de leitura devolvem `viewerState` somente quando há `Authorization`; anônimo recebe `null`.
 
 ### SI-06.15 — Route Handlers BFF de reação em vídeos e comentários
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 14 passing em 2 arquivos de integração (`videos/[id]/reaction` e `comments/[id]/reaction`); tsc e eslint clean
+- **Observations:**
+  - none
 
 ### SI-06.16 — Route Handler BFF de inscrição em canais
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 7 passing em `channels/[id]/subscription/__tests__/route.integration.test.ts`; tsc e eslint clean
+- **Observations:**
+  - A rota ficou em `app/api/channels/[id]/subscription/` (e não `[nickname]`), porque o Next.js proíbe dois nomes de slug dinâmico no mesmo nível e `channels/[id]` já existe; o segmento carrega o nickname. O caminho público `/api/channels/{nickname}/subscription` é o mesmo.
 
 ### SI-06.17 — Route Handlers BFF de comentários e respostas
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 13 passing em 2 arquivos de integração (`videos/[id]/comments` e `comments/[id]/replies`); tsc e eslint clean
+- **Observations:**
+  - `cursor` e `limit` são repassados ao upstream com cast `as never` porque o contrato exportado não declara os query params dos comentários.
 
 ### SI-06.18.0 — Drift audit: Página de visualização do vídeo
 - **Status:** pending
