@@ -33,7 +33,10 @@ docker compose exec nestjs-api npm run start:dev
 
 Services:
 - `nestjs-api` — NestJS API, port `3000`
+- `nestjs-worker` — same image as the API, runs the video worker (idle by default; start it with `docker compose exec nestjs-worker npm run start:worker:dev`)
 - `db` — PostgreSQL 17, port `5432`, database `streamtube`, user/password `streamtube`
+- `redis` — Redis 7, port `6379`, BullMQ backing store
+- `minio` — S3-compatible object storage, API on `9000`, console on `9001`; create the bucket once with `npm run storage:bootstrap`
 
 All verification and teardown commands run on the **host machine**:
 
@@ -148,6 +151,29 @@ NestJS with standard module structure. Source lives in `src/`, compiled output i
 
 - Each domain feature gets its own module (e.g., `UsersModule`, `VideosModule`) registered in `AppModule`
 - Controllers handle HTTP routing; Services hold business logic; both are scoped to their module
+
+## Videos Module
+
+Source in `src/videos/`; the shared S3 client lives in `src/storage/` (`StorageModule`, `S3_CLIENT` token). Config: `storage.config.ts` (`STORAGE_*`, `VIDEO_DRAFT_TTL_HOURS`, `MULTIPART_LIFECYCLE_DAYS`) and `queue.config.ts` (`REDIS_*`).
+
+**Upload (up to 10GB, `MAX_VIDEO_FILE_SIZE_BYTES`)** — the API never receives the file; the client uploads parts straight to MinIO/S3:
+
+| Endpoint | Auth | Purpose |
+|---|---|---|
+| `POST /channels/:channelId/videos` | JWT, channel owner | Creates the video as `draft` and starts a multipart upload |
+| `POST /videos/:id/upload-parts` | JWT, owner | Returns presigned URLs for the requested parts |
+| `POST /videos/:id/complete` | JWT, owner | Completes the multipart upload, sets `processing`, enqueues a `video.process` job |
+| `GET /videos/:id` | Public (token optional) | Video detail; non-`ready` videos are visible only to the owner, otherwise 404 |
+| `GET /videos/:id/stream` | Public | 302 redirect to a presigned URL (the storage serves range requests) |
+| `GET /videos/:id/download` | Public | 302 redirect to a presigned URL with `Content-Disposition: attachment` |
+
+**Status lifecycle (`VideoStatus`):** `draft` → `processing` → `ready` | `error`. Storage keys follow `videos/{id}/original.<ext>`; the video `id` (UUID) is the unique public identifier.
+
+**Queue and worker:** `VideoProcessor` (`@Processor('video-processing')`, `autorun: false`) is registered in `VideosModule`, but only the worker entrypoint `src/main-worker.ts` starts consuming, so the API process never runs FFmpeg. The worker uses ffprobe for duration/metadata, extracts a thumbnail with FFmpeg, uploads it to storage and sets `ready`. Jobs have 3 attempts with exponential backoff (5s); after the last failure the video becomes `error`. Scripts: `start:worker`, `start:worker:dev`, `start:worker:prod`.
+
+**Cleanup (`UploadCleanupService`, cron daily at 1am):** drafts older than `VIDEO_DRAFT_TTL_HOURS` become `error`; multipart uploads older than `MULTIPART_LIFECYCLE_DAYS` are aborted (MinIO does not support the lifecycle abort rule, hence the app-managed cron).
+
+Tests use the real Postgres, Redis and MinIO from Compose (including a real FFmpeg run in `video.processor.integration-spec.ts`). Planning artifacts: `docs/phases/phase-03-videos/`.
 
 ## Code Conventions
 
